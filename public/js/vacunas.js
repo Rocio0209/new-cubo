@@ -5,31 +5,95 @@ let cuboActivo = null;
 let cluesDisponibles = [];
 let resultadosConsulta = [];
 
+
 document.addEventListener("DOMContentLoaded", () => {
+
+    console.log("vacunas.js cargado");
+
+    // 🔹 ACTIVAR SELECT2 EN EL SELECT DE CLUES
+    $('#cluesSelect').select2({
+        placeholder: "Selecciona una o más CLUES",
+        width: '100%',
+        theme: 'bootstrap-5',
+        allowClear: true
+    });
+
     cargarCatalogos();
 
+    // 🔹 Cuando cambias el catálogo, se limpia el select
     catalogoSelect.addEventListener("change", () => {
         btnCargarClues.disabled = !catalogoSelect.value;
-        cluesSelect.innerHTML = "";
+
+        $("#cluesSelect").empty().trigger("change");
         cluesSelect.disabled = true;
     });
 
+    // Botones y acciones
     btnCargarClues.addEventListener("click", cargarClues);
     btnConsultar.addEventListener("click", consultarBiologicos);
     btnExportar.addEventListener("click", exportarExcel);
-    btnTodasHG.addEventListener("click", () => seleccionarPorPrefijo("HG"));
-    btnTodasHGIMB.addEventListener("click", () => seleccionarPorPrefijo("HGIMB"));
+
+    // 🔹 Seleccionar TODAS las HG (todas las que existan en cluesDisponibles)
+    btnTodasHG.addEventListener("click", () => {
+        const seleccionadas = cluesDisponibles.filter(c => c.startsWith("HG"));
+        $("#cluesSelect").val(seleccionadas).trigger("change");
+    });
+
+    // 🔹 Seleccionar TODAS las HGIMB desde endpoint
+    btnTodasHGIMB.addEventListener("click", () => {
+        const catalogo = catalogoSelect.value;
+
+        mostrarSpinner();
+
+        fetch(`${API_FASTAPI}/clues_filtradas?catalogo=${catalogo}&cubo=${cuboActivo}&prefijo=HGIMB`)
+            .then(r => r.json())
+            .then(data => {
+                cluesDisponibles = data.clues;
+
+                // Limpiar Select2
+                $("#cluesSelect").empty();
+
+                // Agregar nuevas opciones
+                cluesDisponibles.forEach(c => {
+                    $("#cluesSelect").append(new Option(c, c));
+                });
+
+                // Seleccionarlas TODAS
+                $("#cluesSelect").val(cluesDisponibles).trigger("change");
+            })
+            .finally(ocultarSpinner);
+    });
+
 });
+;
 
 function cargarCatalogos() {
+    console.log("🔵 Cargando catálogos desde:", `${API_FASTAPI}/cubos_sis`);
+
     fetch(`${API_FASTAPI}/cubos_sis`)
-        .then(r => r.json())
+        .then(r => {
+            console.log("🟢 Respuesta HTTP:", r.status);
+            return r.json();
+        })
         .then(data => {
+            console.log("🟣 Datos recibidos:", data);
+
+            if (!data.cubos_sis) {
+                console.error("❌ ERROR: No llegó cubos_sis");
+                return;
+            }
+
             data.cubos_sis.forEach(c => {
                 catalogoSelect.innerHTML += `<option value="${c}">${c}</option>`;
             });
+
+            console.log("🟢 Catálogos agregados al select");
+        })
+        .catch(err => {
+            console.error("🔴 ERROR de conexión:", err);
         });
 }
+
 
 function cargarClues() {
     const catalogo = catalogoSelect.value;
@@ -40,17 +104,23 @@ function cargarClues() {
         .then(r => r.json())
         .then(data => {
             cuboActivo = data.cubos[0];
-            return fetch(`${API_FASTAPI}/miembros_jerarquia2?catalogo=${catalogo}&cubo=${cuboActivo}&jerarquia=CLUES`);
+
+            return fetch(`${API_FASTAPI}/clues_filtradas?catalogo=${catalogo}&cubo=${cuboActivo}&prefijo=HG`);
         })
         .then(r => r.json())
         .then(data => {
 
-            cluesDisponibles = data.miembros.map(m => m.nombre);
+            cluesDisponibles = data.clues;
 
             cluesSelect.innerHTML = "";
             cluesDisponibles.forEach(c => {
-                cluesSelect.innerHTML += `<option value="${c}">${c}</option>`;
+                $("#cluesSelect").append(new Option(c, c));
             });
+
+            // Refrescar Select2
+            $('#cluesSelect').trigger('change');
+
+
 
             cluesSelect.disabled = false;
             btnConsultar.disabled = false;
@@ -62,11 +132,19 @@ function cargarClues() {
         .finally(ocultarSpinner);
 }
 
+
 function seleccionarPorPrefijo(prefijo) {
     const seleccionadas = cluesDisponibles.filter(c => c.startsWith(prefijo));
-    $("#cluesSelect").val(seleccionadas).trigger("change");
+    console.log("Opciones en select2:", $("#cluesSelect option").length);
 
-    btnConsultar.disabled = seleccionadas.length === 0;
+    if (seleccionadas.length === 0) {
+        alert(`No se encontraron CLUES que comiencen con ${prefijo}`);
+        return;
+    }
+
+    $("#cluesSelect").val(seleccionadas).trigger("change");
+    console.log("Clues filtradas:", seleccionadas);
+    btnConsultar.disabled = false;
 }
 
 function consultarBiologicos() {
@@ -76,27 +154,31 @@ function consultarBiologicos() {
     mostrarSpinner();
 
     fetch(API_LARAVEL, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            catalogo,
-            cubo: cuboActivo,
-            clues_list
-        })
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({
+        catalogo,
+        cubo: cuboActivo,
+        clues_list
     })
-    .then(r => r.json())
-    .then(data => {
-        resultadosConsulta = data.resultados;
-        renderTabla(data);
-        resumenConsulta.innerHTML = `
+})
+
+        .then(r => r.json())
+        .then(data => {
+            resultadosConsulta = data.resultados;
+            renderTabla(data);
+            resumenConsulta.innerHTML = `
             <strong>Catálogo: </strong>${data.catalogo} –
             <strong>Cubo: </strong>${data.cubo} –
             <strong>CLUES consultadas: </strong>${data.metadata.total_clues_procesadas}
         `;
-        resultadosContainer.classList.remove("d-none");
-        btnExportar.disabled = false;
-    })
-    .finally(ocultarSpinner);
+            resultadosContainer.classList.remove("d-none");
+            btnExportar.disabled = false;
+        })
+        .finally(ocultarSpinner);
 }
 
 function renderTabla(data) {

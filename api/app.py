@@ -1060,3 +1060,34 @@ def biologicos_normalizados_con_migrantes(
                 "clues_solicitadas": clues_list
             }
         )
+
+
+
+@app.get("/clues_filtradas")
+def clues_filtradas(catalogo: str, cubo: str, prefijo: str):
+    try:
+        cubo_mdx = f'[{cubo}]'
+        cadena_conexion = get_connection_string(catalogo)
+
+        mdx = f"""
+        SELECT 
+            {{ [CLUES].[CLUES].MEMBERS }} ON ROWS,
+            {{ [Measures].DefaultMember }} ON COLUMNS
+        FROM {cubo_mdx}
+        """
+
+        df = query_olap(cadena_conexion, mdx)
+
+        # Extraer nombre limpio
+        clues = []
+        for _, row in df.iterrows():
+            nombre = row[0]
+            if nombre:
+                valor = nombre.split("].[")[-1].replace("]", "")
+                if valor.startswith(prefijo):
+                    clues.append(valor)
+
+        return { "clues": clues }
+
+    except Exception as e:
+        return { "error": str(e) }
