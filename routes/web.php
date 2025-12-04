@@ -19,6 +19,7 @@ use App\Http\Controllers\UnidadesController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentacionDesarrolloController;
+use App\Http\Controllers\CubosController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -128,4 +129,9 @@ Route::middleware([
 
     /* Route Documentación */
     Route::get('/documentacion_desarrollo', [DocumentacionDesarrolloController::class, 'index'])->name('documentacion.index');
+
+    /* Route Cubos */
+    Route::get('cubos/cubos', [CubosController::class, 'index'])->name('cubos.index');
+
+    Route::post('/consultar-biologicos', [CubosController::class, 'consultarBiologicos']);
 });

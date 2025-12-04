@@ -20,5 +20,6 @@
     {"idmenu":"19","menu":"Permisos","tipo":"1","superior":"15","link":"configuracion/permisos","orden":"4","visible":"1","newtab":"0","icono":null},
     {"idmenu":"20","menu":"Avisos","tipo":"1","superior":"15","link":"avisos","orden":"5","visible":"1","newtab":"0","icono":null},
     {"idmenu":"21","menu":"Eventos","tipo":"1","superior":"15","link":"eventos","orden":"6","visible":"1","newtab":"0","icono":null},
-    {"idmenu":"22","menu":"Panel","tipo":"0","superior":null,"link":"dashboard","orden":"0","visible":"1","newtab":"0","icono":"fa-solid fa-house"}
+    {"idmenu":"22","menu":"Panel","tipo":"0","superior":null,"link":"dashboard","orden":"0","visible":"1","newtab":"0","icono":"fa-solid fa-house"},
+    {"idmenu":"23","menu":"Cubos Dinamicos","tipo":"0","superior":null,"link":"cubos/cubos","orden":"7","visible":"1","newtab":"0","icono":"fa-duotone fa-light fa-cube"}
 ]

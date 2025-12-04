@@ -7,6 +7,20 @@ use Illuminate\Support\Facades\Http;
 
 class CubosController extends Controller
 {
+    protected $permiso = 'cubos';
+
+    protected $accion = 'cubos';
+
+    protected $ao = 'o';
+
+    public function index(Request $request)
+    {
+        if ($request->user()->cannot('cubos/'.$this->permiso)) {
+            abort(403);
+        }
+
+        return view('cubos.index');
+    }
     public function consultarBiologicos(Request $request)
     {
         // Obtener URL base desde .env
