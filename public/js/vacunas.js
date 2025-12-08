@@ -187,48 +187,81 @@ function renderTabla(data) {
     tablaResultadosBody.innerHTML = "";
     tablaFooter.innerHTML = "";
 
+    // ENCABEZADOS FIJOS
     tablaHeader.innerHTML = `
         <th rowspan="2">CLUES</th>
         <th rowspan="2">Unidad</th>
         <th rowspan="2">Entidad</th>
         <th rowspan="2">Jurisdicción</th>
         <th rowspan="2">Municipio</th>
+        <th rowspan="2">Institución</th>
     `;
 
     const apartados = {};
+    const totales = {};   // ← 🟢 Aquí guardaremos la suma por columna
 
+    // 🔹 Identificar columnas dinámicas
     data.resultados.forEach(r => {
         r.biologicos.forEach(ap => {
             if (!apartados[ap.apartado]) apartados[ap.apartado] = [];
+
             ap.variables.forEach(v => {
-                if (!apartados[ap.apartado].includes(v.variable))
+                if (!apartados[ap.apartado].includes(v.variable)) {
                     apartados[ap.apartado].push(v.variable);
+
+                    // Inicializamos el total en 0
+                    totales[v.variable] = 0;
+                }
             });
         });
     });
 
+    // 🔹 Pintar encabezados dinámicos
     Object.entries(apartados).forEach(([apartado, vars]) => {
         tablaHeader.innerHTML += `<th colspan="${vars.length}">${apartado}</th>`;
         vars.forEach(v => variablesHeader.innerHTML += `<th>${v}</th>`);
     });
 
+    // 🔹 Agregar filas de datos por cada CLUES
     data.resultados.forEach(r => {
         let fila = `
-            <td>${r.clues}</td>
+        <td>${r.clues}</td>
             <td>${r.unidad.nombre ?? ""}</td>
             <td>${r.unidad.entidad ?? ""}</td>
             <td>${r.unidad.jurisdiccion ?? ""}</td>
             <td>${r.unidad.municipio ?? ""}</td>
+            <td>${r.unidad.idinstitucion ?? ""}</td>
+
         `;
 
         Object.entries(apartados).forEach(([apartado, vars]) => {
             const datos = r.biologicos.find(b => b.apartado === apartado)?.variables ?? [];
             const dict = Object.fromEntries(datos.map(v => [v.variable, v.total]));
-            vars.forEach(v => fila += `<td>${dict[v] ?? 0}</td>`);
+
+            vars.forEach(v => {
+                const valor = Number(dict[v] ?? 0);
+                fila += `<td>${valor}</td>`;
+
+                // 🔹 Acumular totales
+                totales[v] += valor;
+            });
         });
 
         tablaResultadosBody.innerHTML += `<tr>${fila}</tr>`;
     });
+
+    // 🔹 Construir la fila de TOTALES
+    let filaTotales = `
+        <td colspan="6"><strong>TOTALES GENERALES</strong></td>
+    `;
+
+    Object.entries(apartados).forEach(([apartado, vars]) => {
+        vars.forEach(v => {
+            filaTotales += `<td><strong>${totales[v]}</strong></td>`;
+        });
+    });
+
+    tablaFooter.innerHTML = `<tr class="table-secondary">${filaTotales}</tr>`;
 }
 
 function exportarExcel() {

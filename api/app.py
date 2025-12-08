@@ -886,6 +886,13 @@ def biologicos_normalizados_con_migrantes(
             unidades_medicas = json.load(f)
         unidades_dict = {um["clues"]: um for um in unidades_medicas}
 
+                # Cargar catálogo de instituciones
+        ruta_inst = os.path.join(os.path.dirname(__file__), "../database/seeders/json/instituciones.json")
+        with open(ruta_inst, "r", encoding="utf-8") as f:
+            instituciones = json.load(f)
+        instituciones_dict = {inst["idinstitucion"]: inst for inst in instituciones}
+
+
         # 2. Configuración OLAP
         cubo_mdx = f'[{cubo}]'
         cadena_conexion = get_connection_string(catalogo)
@@ -939,11 +946,22 @@ def biologicos_normalizados_con_migrantes(
                     clues_no_encontradas.append(clues)
                     continue
 
+                unidad_info = unidades_dict.get(clues, {})
+
+                id_inst = unidad_info.get("idinstitucion")
+                institucion_nombre = None
+                if id_inst:
+                    inst_info = instituciones_dict.get(id_inst)
+                    if inst_info:
+                        # puedes usar "institucion" o "descripcion_corta" si prefieres corto
+                        institucion_nombre = inst_info.get("institucion")
+
                 geo_data = {
-                    "nombre": unidades_dict.get(clues, {}).get("nombre"),
+                    "nombre": unidad_info.get("nombre"),
                     "entidad": obtener_valor_dim(cadena_conexion, cubo_mdx, "Entidad", clues),
                     "jurisdiccion": obtener_valor_dim(cadena_conexion, cubo_mdx, "Jurisdicción", clues),
-                    "municipio": obtener_valor_dim(cadena_conexion, cubo_mdx, "Municipio", clues)
+                    "municipio": obtener_valor_dim(cadena_conexion, cubo_mdx, "Municipio", clues),
+                    "idinstitucion": unidad_info.get("idinstitucion")
                 }
 
                 biologicos_data = []
