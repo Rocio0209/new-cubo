@@ -275,8 +275,83 @@ function renderTabla(data) {
 }
 
 function exportarExcel() {
-    alert("Próximo paso: insertar resultados en plantilla Excel 👍");
+    if (!resultadosConsulta || resultadosConsulta.length === 0) {
+        alert("No hay resultados para exportar.");
+        return;
+    }
+
+    const datos = resultadosConsulta;
+
+    // --------------------------
+    // 1. Construir ENCABEZADOS
+    // --------------------------
+    const encabezadosFijos = [
+        "CLUES",
+        "Unidad",
+        "Entidad",
+        "Jurisdicción",
+        "Municipio",
+        "Institución"
+    ];
+
+    // Recolectar columnas dinámicas (apartados + variables)
+    const columnasDinamicas = [];
+
+    datos.forEach(r => {
+        r.biologicos.forEach(b => {
+            b.variables.forEach(v => {
+                if (!columnasDinamicas.includes(v.variable)) {
+                    columnasDinamicas.push(v.variable);
+                }
+            });
+        });
+    });
+
+    const encabezados = encabezadosFijos.concat(columnasDinamicas);
+
+    // --------------------------
+    // 2. Construir FILAS
+    // --------------------------
+    const filas = [];
+
+    datos.forEach(r => {
+        const fila = {
+            "CLUES": r.clues,
+            "Unidad": r.unidad.nombre ?? "",
+            "Entidad": r.unidad.entidad ?? "",
+            "Jurisdicción": r.unidad.jurisdiccion ?? "",
+            "Municipio": r.unidad.municipio ?? "",
+            "Institución": obtenerInicialesInstitucion(r.unidad.idinstitucion)
+        };
+
+        // Inicializar valores dinámicos
+        columnasDinamicas.forEach(v => {
+            fila[v] = 0;
+        });
+
+        // Llenar valores
+        r.biologicos.forEach(b => {
+            b.variables.forEach(v => {
+                fila[v.variable] = v.total ?? 0;
+            });
+        });
+
+        filas.push(fila);
+    });
+
+    // --------------------------
+    // 3. Crear Excel con SheetJS
+    // --------------------------
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(filas, { header: encabezados });
+
+    XLSX.utils.book_append_sheet(wb, ws, "Biológicos");
+
+    XLSX.writeFile(wb, "biologicos.xlsx");
+
+    alert("Excel generado correctamente 👍");
 }
+
 
 function mostrarSpinner() {
     spinnerCarga.classList.remove("d-none");

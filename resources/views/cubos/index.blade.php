@@ -75,6 +75,9 @@
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 {{-- jQuery obligatorio --}}
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js" nonce="{{ csp_nonce() }}"></script>
+
+
 
 
 
