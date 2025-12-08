@@ -66,6 +66,14 @@ class InstitucionesController extends Controller
         return response()->json(['success'=>$this->accion.' almacenad'.$this->ao.' correctamente.']);
     }
 
+public function listadoJson()
+{
+    return response()->json(
+        Institucion::select('idinstitucion', 'iniciales')->get()
+    );
+}
+
+
     /**
      * Show the form for editing the specified resource.
      *

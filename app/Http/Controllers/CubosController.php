@@ -22,21 +22,27 @@ class CubosController extends Controller
         return view('cubos.index');
     }
     public function consultarBiologicos(Request $request)
-    {
-        // Obtener URL base desde .env
-        $apiBase = rtrim(env('API_URL'), '/');
+{
+    $apiBase = rtrim(env('API_URL'), '/');
+    $url = $apiBase . '/biologicos_normalizados_con_migrantes2';
 
-        // Construir endpoint final
-        $url = $apiBase . '/biologicos_normalizados_con_migrantes2';
+    $response = Http::post($url, [
+        "catalogo" => $request->catalogo,
+        "cubo" => $request->cubo,
+        "clues_list" => $request->clues_list
+    ]);
 
-        // Consumir API
-        $response = Http::post($url, [
-            "catalogo" => $request->catalogo,
-            "cubo" => $request->cubo,
-            "clues_list" => $request->clues_list
-        ]);
-
-        return $response->json();
+    if ($response->failed()) {
+        return response()->json([
+            "error" => true,
+            "message" => "Error en la API externa",
+            "status" => $response->status(),
+            "body" => $response->body()
+        ], 500);
     }
+
+    return $response->json();
+}
+
 }
 

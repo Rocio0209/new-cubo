@@ -4,6 +4,7 @@ console.log("🔵 vacanas.js cargado correctamente");
 let cuboActivo = null;
 let cluesDisponibles = [];
 let resultadosConsulta = [];
+let institucionesCatalogo = [];
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -26,6 +27,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         $("#cluesSelect").empty().trigger("change");
         cluesSelect.disabled = true;
+    });
+
+    fetch("/instituciones-json")
+    .then(r => r.json())
+    .then(data => {
+        institucionesCatalogo = data;
+        console.log("Instituciones cargadas:", institucionesCatalogo);
     });
 
     // Botones y acciones
@@ -157,13 +165,15 @@ function consultarBiologicos() {
     method: "POST",
     headers: {
         "Content-Type": "application/json",
-        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content")
     },
     body: JSON.stringify({
         catalogo,
         cubo: cuboActivo,
         clues_list
     })
+
+    
 })
 
         .then(r => r.json())
@@ -230,7 +240,7 @@ function renderTabla(data) {
             <td>${r.unidad.entidad ?? ""}</td>
             <td>${r.unidad.jurisdiccion ?? ""}</td>
             <td>${r.unidad.municipio ?? ""}</td>
-            <td>${r.unidad.idinstitucion ?? ""}</td>
+            <td>${obtenerInicialesInstitucion(r.unidad.idinstitucion)}</td>
 
         `;
 
@@ -273,4 +283,16 @@ function mostrarSpinner() {
 }
 function ocultarSpinner() {
     spinnerCarga.classList.add("d-none");
+}
+
+function obtenerInicialesInstitucion(id) {
+    if (!id) return "";
+
+    // Convertir SIEMPRE a string y rellenar a 2 dígitos
+    const idFixed = id.toString().padStart(2, "0");
+
+    // Asegurar que el JSON también se compara como string
+    const inst = institucionesCatalogo.find(i => i.idinstitucion.toString().padStart(2, "0") === idFixed);
+
+    return inst ? inst.iniciales : "";
 }

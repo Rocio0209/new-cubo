@@ -102,6 +102,9 @@ Route::middleware([
     /* Route Instituciones Unidades */
     Route::get('/catalogos/instituciones', [InstitucionesController::class, 'index'])->name('instituciones.index');
     Route::resource('instituciones-api', InstitucionesController::class);
+    Route::get('/instituciones-json', [InstitucionesController::class, 'listadoJson'])
+    ->name('instituciones.json');
+
 
     /* Route Estratos */
     Route::get('/catalogos/estratos', [EstratosController::class, 'index'])->name('estratos.index');

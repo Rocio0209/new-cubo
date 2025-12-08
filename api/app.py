@@ -956,12 +956,15 @@ def biologicos_normalizados_con_migrantes(
                         # puedes usar "institucion" o "descripcion_corta" si prefieres corto
                         institucion_nombre = inst_info.get("institucion")
 
+                raw_id = unidad_info.get("idinstitucion")
+                id_institucion = str(raw_id).zfill(2) if raw_id is not None else None
+
                 geo_data = {
                     "nombre": unidad_info.get("nombre"),
                     "entidad": obtener_valor_dim(cadena_conexion, cubo_mdx, "Entidad", clues),
                     "jurisdiccion": obtener_valor_dim(cadena_conexion, cubo_mdx, "Jurisdicción", clues),
                     "municipio": obtener_valor_dim(cadena_conexion, cubo_mdx, "Municipio", clues),
-                    "idinstitucion": unidad_info.get("idinstitucion")
+                    "idinstitucion": id_institucion
                 }
 
                 biologicos_data = []
