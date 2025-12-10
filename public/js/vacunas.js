@@ -52,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Botones
     btnCargarClues.addEventListener("click", cargarClues);
     btnConsultar.addEventListener("click", consultarBiologicos);
-    btnExportar.addEventListener("click", exportarExcel);
 
     btnTodasHG.addEventListener("click", () => {
         const seleccionadas = cluesDisponibles.filter(c => c.startsWith("HG"));
@@ -191,6 +190,20 @@ function consultarBiologicos() {
         .finally(ocultarSpinner);
 }
 
+// ===============================
+// Obtener iniciales institución
+// ===============================
+function obtenerInicialesInstitucion(id) {
+    if (!id) return "";
+
+    const idFixed = id.toString().padStart(2, "0");
+
+    const inst = institucionesCatalogo.find(
+        i => i.idinstitucion.toString().padStart(2, "0") === idFixed
+    );
+
+    return inst ? inst.iniciales : "";
+}
 
 
 // ===============================
