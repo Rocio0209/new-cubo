@@ -19,6 +19,8 @@ import io
 import os
 import json
 from config import get_connection_string
+from collections import defaultdict
+
 
 app = FastAPI()
 
@@ -133,8 +135,156 @@ def extraer_edad_inicial(nombre_variable: str) -> int:
             return valor * 30
         elif "AÑO" in unidad:
             return valor * 365
+        
+    # Casos como "60 Y MÁS AÑOS"
+    match = re.search(r"(\d+)\s*Y\s*M[AÁ]S\s*A[NÑ]OS", nombre)
+    if match:
+        return int(match.group(1)) * 365
+
 
     return 9999  # Variables sin edad clara al final
+
+# ================================
+# DICCIONARIO DE GRUPOS POR APARTADO
+# ================================
+def normalizar_apartado(nombre):
+    nombre = nombre.upper()
+    nombre = nombre.replace("Ó", "O").replace("Í", "I").replace("É", "E").replace("Á", "A").replace("Ú", "U")
+    nombre = nombre.replace("  ", " ")
+    nombre = nombre.strip()
+    return nombre
+GRUPOS_APARTADOS = {
+    normalizar_apartado("127 APLICACIÓN DE BIOLÓGICOS SRP TRIPLE VIRAL"): [
+        "PARA INICIAR O COMPLETAR ESQUEMA"
+    ],
+    normalizar_apartado("129 APLICACIÓN DE BIOLÓGICOS VPH"): [
+        "NIÑAS Y/O ADOLESCENTES VÍCTIMAS DE VIOLACIÓN SEXUAL",
+        "MUJERES CIS Y TRANS DE 11 A 49 AÑOS QUE VIVEN CON VIH",
+        "HOMBRES CIS Y TRANS DE 11 A 49 AÑOS QUE VIVEN CON VIH"
+    ],
+    normalizar_apartado("344 APLICACIÓN DE BIOLÓGICOS COVID-19"): [
+        "5 A 11 AÑOS",
+        "FACTORES DE RIESGO",
+        "60 AÑOS Y MÁS",
+        "EMBARAZADAS",
+        "PERSONAL DE SALUD",
+        "OTROS GRUPOS DE BAJA PRIORIDAD"
+    ],
+    normalizar_apartado("274 APLICACIÓN DE BIOLÓGICOS ROTAVIRUS RV1"): [
+        "PARA INICIAR O COMPLETAR ESQUEMA"
+    ],
+    normalizar_apartado("275 APLICACIÓN DE BIOLÓGICOS HEXAVALENTE"): [
+        "INICIAR O COMPLETAR ESQUEMA"
+    ],
+    normalizar_apartado("132 APLICACIÓN DE BIOLÓGICOS Td"): [
+        "PRIMERA EMBARAZADAS",
+        "SEGUNDA EMBARAZADAS",
+        "TERCERA EMBARAZADAS",
+        "REFUERZO EMBARAZADAS",
+        "PRIMERA MUJERES NO EMBARAZADAS",
+        "PRIMERA HOMBRES",
+        "SEGUNDA MUJERES NO EMBARAZADAS",
+        "SEGUNDA HOMBRES",
+        "TERCERA MUJERES NO EMBARAZADAS",
+        "TERCERA HOMBRES",
+        "REFUERZO MUJERES",
+        "REFUERZO HOMBRES"
+    ],
+}
+
+ORDEN_EDADES = [
+    "0 A 5 AÑOS",
+    "0 A 9 AÑOS",
+    "6 A 11 MESES",
+    "1 A 4 AÑOS",
+    "5 A 11 AÑOS",
+    "12 A 17 AÑOS",
+    "18 A 29 AÑOS",
+    "20 A 49 AÑOS",
+    "30 A 59 AÑOS",
+    "50 A 59 AÑOS",
+    "60 AÑOS Y MÁS",
+]
+
+# ================================
+# FUNCIÓN PARA OBTENER GRUPOS
+# ================================
+def obtener_grupos_para_apartado(apartado_nombre):
+    """
+    apartado_nombre → string EXACTO del JSON
+    Ej: "127 APLICACIÓN DE BIOLÓGICOS SRP TRIPLE VIRAL"
+    """
+
+    # Obtenemos los grupos definidos para este apartado
+    grupos_definidos = GRUPOS_APARTADOS.get(apartado_nombre, [])
+
+    # Insertar "sin grupo" al inicio
+    grupos_finales = ["sin grupo"] + grupos_definidos + ["migrante"]
+
+    return grupos_finales
+
+# ================================
+# FUNCIÓN PARA ASIGNAR GRUPO A UNA VARIABLE
+# ================================
+def asignar_grupo(nombre_variable: str, grupos_apartado: list) -> str:
+    """
+    Asigna el grupo correcto según:
+      - Si contiene la palabra MIGRANTE → 'migrante'
+      - Si contiene parcialmente el texto de un grupo → ese grupo
+      - Si no coincide con ningún grupo → 'sin grupo'
+    """
+
+    nombre = nombre_variable.upper()
+
+    # 1. Detectar migrantes
+    if "MIGRANTE" in nombre:
+        return "migrante"
+
+    # 2. Buscar coincidencia parcial con grupos
+    for grupo in grupos_apartado:
+        g = grupo.upper()
+        if g in nombre:
+            return grupo   # devuelve el grupo original
+
+    # 3. Sin coincidencias
+    return "sin grupo"
+
+def agrupar_por_grupo(variables, grupos_apartado=None):
+    """
+    Agrupa las variables por grupo respetando el ORDEN EXACTO definido en GRUPOS_APARTADOS.
+    """
+    grupos = defaultdict(list)
+
+    # Construir contenedor
+    for var in variables:
+        grupos[var["grupo"]].append(var)
+
+    grupos_finales = []
+
+    # 1. SIN GRUPO primero (si existe)
+    if "sin grupo" in grupos:
+        grupos_finales.append({
+            "grupo": "sin grupo",
+            "variables": grupos["sin grupo"]
+        })
+
+    # 2. Grupos definidos en el diccionario, EN EL ORDEN EXACTO
+    if grupos_apartado:
+        for g in grupos_apartado:
+            if g not in ("sin grupo", "migrante") and g in grupos:
+                grupos_finales.append({
+                    "grupo": g,
+                    "variables": grupos[g]
+                })
+
+    # 3. MIGRANTE al final (si existe)
+    if "migrante" in grupos:
+        grupos_finales.append({
+            "grupo": "migrante",
+            "variables": grupos["migrante"]
+        })
+
+    return grupos_finales
 
 
 @app.get("/cubos_disponibles")
@@ -431,7 +581,7 @@ def biologicos_por_clues(catalogo: str, cubo: str, clues: str):
                 
                 apartados_biologicos = []
                 for _, row in df_apartados.iterrows():
-                    if row[0] and 'BIOLÓGICOS' in row[0].upper():
+                    if row[0] and 'APLICACIÓN DE BIOLÓGICOS' in row[0].upper():
                         apartado = row[0].split('.')[-1].replace('[', '').replace(']', '')
                         apartados_biologicos.append(apartado)
                 
@@ -473,6 +623,39 @@ def biologicos_por_clues(catalogo: str, cubo: str, clues: str):
             return biologicos_data
 
         datos_biologicos = obtener_datos_biologicos(clues)
+
+        # ================================
+        # APLICAR GRUPOS A CADA APARTADO
+        # ================================
+        for apartado_data in datos_biologicos:
+            apartado_nombre = apartado_data["apartado"]  # nombre completo del apartado
+
+            # Obtener grupos correspondientes a este apartado usando el nombre exacto
+            apartado_nombre = apartado_data["apartado"]               # apartado original
+            apartado_normalizado = normalizar_apartado(apartado_nombre)
+            grupos_apartado = obtener_grupos_para_apartado(apartado_normalizado)
+
+
+
+            # 1. Normalizar nombre del apartado
+            apartado_nombre = apartado_data["apartado"]
+            apartado_normalizado = normalizar_apartado(apartado_nombre)
+
+            # 2. Obtener grupos definidos para el apartado
+            grupos_apartado = obtener_grupos_para_apartado(apartado_normalizado)
+
+            # 3. Asignar grupo a cada variable
+            for var in apartado_data["variables"]:
+                var["grupo"] = asignar_grupo(var["variable"], grupos_apartado)
+
+            # 4. Agrupar variables por grupo
+            apartado_data["grupos"] = agrupar_por_grupo(apartado_data["variables"])
+
+            # 5. Eliminar lista original
+            del apartado_data["variables"]
+
+
+
 
         # Construir respuesta final
         resultado = {
@@ -584,7 +767,7 @@ def biologicos_por_multiples_clues(
                         
                         apartados_biologicos = []
                         for _, row in df_apartados.iterrows():
-                            if row[0] and 'BIOLÓGICOS' in row[0].upper():
+                            if row[0] and 'APLICACIÓN DE BIOLÓGICOS' in row[0].upper():
                                 apartado = row[0].split('].[')[-1].replace(']', '').strip()
                                 apartados_biologicos.append(apartado)
                         
@@ -746,7 +929,7 @@ def biologicos_normalizados(
 
         todas_las_variables = {}
         for _, row in df_apartados.iterrows():
-            if row[0] and 'BIOLÓGICOS' in row[0].upper():
+            if row[0] and 'APLICACIÓN DE BIOLÓGICOS' in row[0].upper():
                 apartado = row[0].split('].[')[-1].replace(']', '').strip()
                 mdx_vars = f"""
                 SELECT
@@ -881,17 +1064,16 @@ def biologicos_normalizados_con_migrantes(
 ):
     try:
         # 1. Cargar JSON de unidades médicas
-        ruta_archivo = os.path.join(os.path.dirname(__file__), "../database/seeders/json/unidades.json")
-        with open(ruta_archivo, "r", encoding="utf-8") as f:
+        ruta_unidades = os.path.join(os.path.dirname(__file__), "../database/seeders/json/unidades.json")
+        with open(ruta_unidades, "r", encoding="utf-8") as f:
             unidades_medicas = json.load(f)
         unidades_dict = {um["clues"]: um for um in unidades_medicas}
 
-                # Cargar catálogo de instituciones
+        # 1b. Cargar catálogo de instituciones
         ruta_inst = os.path.join(os.path.dirname(__file__), "../database/seeders/json/instituciones.json")
         with open(ruta_inst, "r", encoding="utf-8") as f:
             instituciones = json.load(f)
         instituciones_dict = {inst["idinstitucion"]: inst for inst in instituciones}
-
 
         # 2. Configuración OLAP
         cubo_mdx = f'[{cubo}]'
@@ -900,7 +1082,7 @@ def biologicos_normalizados_con_migrantes(
         resultados = []
         clues_no_encontradas = []
 
-        # 3. Obtener TODAS las variables posibles por apartado
+        # 3. Obtener todos los apartados y variables posibles
         mdx_apartados = f"""
         SELECT
         NON EMPTY {{ [Apartado].[Apartado].MEMBERS }} ON ROWS,
@@ -911,8 +1093,9 @@ def biologicos_normalizados_con_migrantes(
 
         todas_las_variables = {}
         for _, row in df_apartados.iterrows():
-            if row[0] and 'BIOLÓGICOS' in row[0].upper():
+            if row[0] and 'APLICACIÓN DE BIOLÓGICOS' in row[0].upper():
                 apartado = row[0].split('].[')[-1].replace(']', '').strip()
+
                 mdx_vars = f"""
                 SELECT
                 NON EMPTY {{ [Variable].[Variable].MEMBERS }} ON ROWS,
@@ -920,7 +1103,9 @@ def biologicos_normalizados_con_migrantes(
                 FROM {cubo_mdx}
                 WHERE ([Apartado].[Apartado].&[{apartado}])
                 """
+
                 df_vars = query_olap(cadena_conexion, mdx_vars)
+
                 variables = []
                 for _, vrow in df_vars.iterrows():
                     var_name = vrow[0]
@@ -931,33 +1116,26 @@ def biologicos_normalizados_con_migrantes(
                     else:
                         var_name = var_name.strip('[]')
                     variables.append(var_name)
+
                 todas_las_variables[apartado] = variables
 
-        # 4. Procesar cada CLUES
+        # 4. Procesar cada CLUES solicitada
         for clues in clues_list:
             try:
+                # Validar que la CLUES existe
                 mdx_check = f"""
                 SELECT {{[Measures].DefaultMember}} ON COLUMNS
                 FROM {cubo_mdx}
                 WHERE ([CLUES].[CLUES].&[{clues}])
                 """
-                check_df = query_olap(cadena_conexion, mdx_check)
-                if check_df.empty:
+                if query_olap(cadena_conexion, mdx_check).empty:
                     clues_no_encontradas.append(clues)
                     continue
 
                 unidad_info = unidades_dict.get(clues, {})
 
-                id_inst = unidad_info.get("idinstitucion")
-                institucion_nombre = None
-                if id_inst:
-                    inst_info = instituciones_dict.get(id_inst)
-                    if inst_info:
-                        # puedes usar "institucion" o "descripcion_corta" si prefieres corto
-                        institucion_nombre = inst_info.get("institucion")
-
                 raw_id = unidad_info.get("idinstitucion")
-                id_institucion = str(raw_id).zfill(2) if raw_id is not None else None
+                id_institucion = str(raw_id).zfill(2) if raw_id else None
 
                 geo_data = {
                     "nombre": unidad_info.get("nombre"),
@@ -969,6 +1147,7 @@ def biologicos_normalizados_con_migrantes(
 
                 biologicos_data = []
 
+                # Procesar cada apartado
                 for apartado, variables in todas_las_variables.items():
                     mdx_clues = f"""
                     SELECT
@@ -977,12 +1156,13 @@ def biologicos_normalizados_con_migrantes(
                     FROM {cubo_mdx}
                     WHERE ([Apartado].[Apartado].&[{apartado}], [CLUES].[CLUES].&[{clues}])
                     """
+
                     df_vars = query_olap(cadena_conexion, mdx_clues)
 
                     valores = {}
                     total_migrantes = 0
-                    tiene_migrantes = False
 
+                    # Procesar las variables de ese apartado
                     for _, vrow in df_vars.iterrows():
                         var_name = vrow[0]
                         if '].&[' in var_name:
@@ -992,46 +1172,47 @@ def biologicos_normalizados_con_migrantes(
                         else:
                             var_name = var_name.strip('[]')
 
-                        try:
-                            valor = int(float(vrow[1])) if pd.notna(vrow[1]) else 0
-                        except:
-                            valor = 0
+                        valor = int(float(vrow[1])) if pd.notna(vrow[1]) else 0
 
-                        if 'MIGRANTE' in var_name.upper():
+                        # Consolidar migrantes
+                        if "MIGRANTE" in var_name.upper():
                             total_migrantes += valor
-                            tiene_migrantes = True
                         else:
                             valores[var_name] = valor
 
-                    variables_finales = [
-                        {"variable": var, "total": valores.get(var, 0)}
-                        for var in variables
-                        if 'MIGRANTE' not in var.upper()
-                    ]
-
-                    
-                    # Filtrar solo las variables normales (sin "MIGRANTES")
+                    # Variables sin migrantes
                     variables_normales = [
                         {"variable": var, "total": valores.get(var, 0)}
                         for var in variables
-                        if 'MIGRANTE' not in var.upper()
+                        if "MIGRANTE" not in var.upper()
                     ]
 
-                    # Ordenar solo las variables normales
+                    # Ordenar por edad
                     variables_normales.sort(key=lambda v: extraer_edad_inicial(v["variable"]))
 
-                    # Agregar el total de migrantes al final
+                    # Agregar migrantes al final
                     variables_normales.append({
                         "variable": f"TOTAL DE VACUNAS APLICADAS A MIGRANTES - {apartado}",
                         "total": total_migrantes
                     })
 
-                    # Reemplazar variables_finales con la lista ordenada + total
-                    variables_finales = variables_normales
+                    # ================================
+                    # Asignar grupo a cada variable
+                    # ================================
+                    apartado_normalizado = normalizar_apartado(apartado)
+                    grupos_apartado = obtener_grupos_para_apartado(apartado_normalizado)
+
+                    for var in variables_normales:
+                        var["grupo"] = asignar_grupo(var["variable"], grupos_apartado)
+
+                    # ================================
+                    # Agrupar variables por grupo (solo una vez)
+                    # ================================
+                    grupos_finales = agrupar_por_grupo(variables_normales, grupos_apartado)
 
                     biologicos_data.append({
                         "apartado": apartado,
-                        "variables": variables_finales
+                        "grupos": grupos_finales
                     })
 
                 resultados.append({
@@ -1044,15 +1225,13 @@ def biologicos_normalizados_con_migrantes(
                 resultados.append({
                     "clues": clues,
                     "error": str(e),
-                    "unidad": {
-                        "nombre": None,
-                        "entidad": None,
-                        "jurisdiccion": None,
-                        "municipio": None
-                    },
+                    "unidad": {"nombre": None, "entidad": None, "jurisdiccion": None, "municipio": None},
                     "biologicos": []
                 })
 
+        # ================================
+        # Respuesta final
+        # ================================
         return {
             "catalogo": catalogo,
             "cubo": cubo,
@@ -1061,10 +1240,7 @@ def biologicos_normalizados_con_migrantes(
             "metadata": {
                 "fecha_consulta": pd.Timestamp.now().isoformat(),
                 "version": "1.4",
-                "total_clues_solicitadas": len(clues_list),
-                "total_clues_procesadas": len(resultados),
-                "total_clues_no_encontradas": len(clues_no_encontradas),
-                "nota": "Todas las variables se normalizan con valor 0 si no están presentes, incluyendo consolidación de migrantes"
+                "nota": "Variables normalizadas y migrantes consolidados"
             }
         }
 
@@ -1073,13 +1249,7 @@ def biologicos_normalizados_con_migrantes(
         traceback.print_exc()
         return JSONResponse(
             status_code=500,
-            content={
-                "error": str(e),
-                "detalle": "Error interno al procesar la solicitud",
-                "catalogo": catalogo,
-                "cubo": cubo,
-                "clues_solicitadas": clues_list
-            }
+            content={"error": str(e), "detalle": "Error interno", "catalogo": catalogo, "cubo": cubo}
         )
 
 

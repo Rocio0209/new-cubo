@@ -1,10 +1,22 @@
 const API_LARAVEL = "/consultar-biologicos";
 const API_FASTAPI = "http://127.0.0.1:8080";
 console.log("🔵 vacanas.js cargado correctamente");
+
 let cuboActivo = null;
 let cluesDisponibles = [];
 let resultadosConsulta = [];
 let institucionesCatalogo = [];
+
+// ===============================
+// Spinner global
+// ===============================
+function mostrarSpinner() {
+    spinnerCarga.classList.remove("d-none");
+}
+
+function ocultarSpinner() {
+    spinnerCarga.classList.add("d-none");
+}
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -29,25 +41,24 @@ document.addEventListener("DOMContentLoaded", () => {
         cluesSelect.disabled = true;
     });
 
+    // Cargar instituciones
     fetch("/instituciones-json")
-    .then(r => r.json())
-    .then(data => {
-        institucionesCatalogo = data;
-        console.log("Instituciones cargadas:", institucionesCatalogo);
-    });
+        .then(r => r.json())
+        .then(data => {
+            institucionesCatalogo = data;
+            console.log("Instituciones cargadas:", institucionesCatalogo);
+        });
 
-    // Botones y acciones
+    // Botones
     btnCargarClues.addEventListener("click", cargarClues);
     btnConsultar.addEventListener("click", consultarBiologicos);
     btnExportar.addEventListener("click", exportarExcel);
 
-    // 🔹 Seleccionar TODAS las HG (todas las que existan en cluesDisponibles)
     btnTodasHG.addEventListener("click", () => {
         const seleccionadas = cluesDisponibles.filter(c => c.startsWith("HG"));
         $("#cluesSelect").val(seleccionadas).trigger("change");
     });
 
-    // 🔹 Seleccionar TODAS las HGIMB desde endpoint
     btnTodasHGIMB.addEventListener("click", () => {
         const catalogo = catalogoSelect.value;
 
@@ -58,15 +69,11 @@ document.addEventListener("DOMContentLoaded", () => {
             .then(data => {
                 cluesDisponibles = data.clues;
 
-                // Limpiar Select2
                 $("#cluesSelect").empty();
-
-                // Agregar nuevas opciones
                 cluesDisponibles.forEach(c => {
                     $("#cluesSelect").append(new Option(c, c));
                 });
 
-                // Seleccionarlas TODAS
                 $("#cluesSelect").val(cluesDisponibles).trigger("change");
             })
             .finally(ocultarSpinner);
@@ -75,16 +82,16 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 ;
 
+
+// ===============================
+// Cargar catálogos
+// ===============================
 function cargarCatalogos() {
     console.log("🔵 Cargando catálogos desde:", `${API_FASTAPI}/cubos_sis`);
 
     fetch(`${API_FASTAPI}/cubos_sis`)
-        .then(r => {
-            console.log("🟢 Respuesta HTTP:", r.status);
-            return r.json();
-        })
+        .then(r => r.json())
         .then(data => {
-            console.log("🟣 Datos recibidos:", data);
 
             if (!data.cubos_sis) {
                 console.error("❌ ERROR: No llegó cubos_sis");
@@ -95,14 +102,14 @@ function cargarCatalogos() {
                 catalogoSelect.innerHTML += `<option value="${c}">${c}</option>`;
             });
 
-            console.log("🟢 Catálogos agregados al select");
         })
-        .catch(err => {
-            console.error("🔴 ERROR de conexión:", err);
-        });
+        .catch(err => console.error("🔴 ERROR de conexión:", err));
 }
 
 
+// ===============================
+// Cargar CLUES
+// ===============================
 function cargarClues() {
     const catalogo = catalogoSelect.value;
 
@@ -125,10 +132,7 @@ function cargarClues() {
                 $("#cluesSelect").append(new Option(c, c));
             });
 
-            // Refrescar Select2
             $('#cluesSelect').trigger('change');
-
-
 
             cluesSelect.disabled = false;
             btnConsultar.disabled = false;
@@ -141,20 +145,9 @@ function cargarClues() {
 }
 
 
-function seleccionarPorPrefijo(prefijo) {
-    const seleccionadas = cluesDisponibles.filter(c => c.startsWith(prefijo));
-    console.log("Opciones en select2:", $("#cluesSelect option").length);
-
-    if (seleccionadas.length === 0) {
-        alert(`No se encontraron CLUES que comiencen con ${prefijo}`);
-        return;
-    }
-
-    $("#cluesSelect").val(seleccionadas).trigger("change");
-    console.log("Clues filtradas:", seleccionadas);
-    btnConsultar.disabled = false;
-}
-
+// ===============================
+// Consultar Biológicos
+// ===============================
 function consultarBiologicos() {
     const catalogo = catalogoSelect.value;
     const clues_list = Array.from(cluesSelect.selectedOptions).map(o => o.value);
@@ -162,35 +155,47 @@ function consultarBiologicos() {
     mostrarSpinner();
 
     fetch(API_LARAVEL, {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content")
-    },
-    body: JSON.stringify({
-        catalogo,
-        cubo: cuboActivo,
-        clues_list
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content")
+        },
+        body: JSON.stringify({
+            catalogo,
+            cubo: cuboActivo,
+            clues_list
+        })
     })
-
-    
-})
-
         .then(r => r.json())
         .then(data => {
             resultadosConsulta = data.resultados;
             renderTabla(data);
+            console.log(
+                "Grupos 132 por cada CLUES:",
+                data.resultados.map(r =>
+                    r.biologicos.find(b => b.apartado.includes("132"))
+                )
+            );
+
+
+
             resumenConsulta.innerHTML = `
-            <strong>Catálogo: </strong>${data.catalogo} –
-            <strong>Cubo: </strong>${data.cubo} –
-            <strong>CLUES consultadas: </strong>${data.metadata.total_clues_procesadas}
-        `;
+                <strong>Catálogo: </strong>${data.catalogo} –
+                <strong>Cubo: </strong>${data.cubo} –
+                <strong>CLUES consultadas: </strong>${data.metadata.total_clues_procesadas}
+            `;
+
             resultadosContainer.classList.remove("d-none");
             btnExportar.disabled = false;
         })
         .finally(ocultarSpinner);
 }
 
+
+
+// ===============================
+// Renderizar tabla
+// ===============================
 function renderTabla(data) {
     tablaHeader.innerHTML = "";
     variablesHeader.innerHTML = "";
@@ -208,51 +213,58 @@ function renderTabla(data) {
     `;
 
     const apartados = {};
-    const totales = {};   // ← 🟢 Aquí guardaremos la suma por columna
+    const totales = {};
 
-    // 🔹 Identificar columnas dinámicas
+    // 📌 Aplanar grupos → solo variables (sin subtítulos)
     data.resultados.forEach(r => {
         r.biologicos.forEach(ap => {
+
             if (!apartados[ap.apartado]) apartados[ap.apartado] = [];
 
-            ap.variables.forEach(v => {
-                if (!apartados[ap.apartado].includes(v.variable)) {
-                    apartados[ap.apartado].push(v.variable);
-
-                    // Inicializamos el total en 0
-                    totales[v.variable] = 0;
-                }
+            ap.grupos.forEach(g => {
+                g.variables.forEach(v => {
+                    if (!apartados[ap.apartado].includes(v.variable)) {
+                        apartados[ap.apartado].push(v.variable);
+                        totales[v.variable] = 0;
+                    }
+                });
             });
+
         });
     });
 
-    // 🔹 Pintar encabezados dinámicos
+    // Pintar encabezados dinámicos
     Object.entries(apartados).forEach(([apartado, vars]) => {
         tablaHeader.innerHTML += `<th colspan="${vars.length}">${apartado}</th>`;
         vars.forEach(v => variablesHeader.innerHTML += `<th>${v}</th>`);
     });
 
-    // 🔹 Agregar filas de datos por cada CLUES
+    // Filas por CLUES
     data.resultados.forEach(r => {
         let fila = `
-        <td>${r.clues}</td>
+            <td>${r.clues}</td>
             <td>${r.unidad.nombre ?? ""}</td>
             <td>${r.unidad.entidad ?? ""}</td>
             <td>${r.unidad.jurisdiccion ?? ""}</td>
             <td>${r.unidad.municipio ?? ""}</td>
             <td>${obtenerInicialesInstitucion(r.unidad.idinstitucion)}</td>
-
         `;
 
         Object.entries(apartados).forEach(([apartado, vars]) => {
-            const datos = r.biologicos.find(b => b.apartado === apartado)?.variables ?? [];
-            const dict = Object.fromEntries(datos.map(v => [v.variable, v.total]));
+            const grupos = r.biologicos.find(b => b.apartado === apartado)?.grupos ?? [];
 
+            // Diccionario de variables ya ordenadas por backend
+            let dict = {};
+            grupos.forEach(g => {
+                g.variables.forEach(v => {
+                    dict[v.variable] = v.total;
+                });
+            });
+
+            // Ahora imprimimos solo los valores (sin subtítulos)
             vars.forEach(v => {
                 const valor = Number(dict[v] ?? 0);
                 fila += `<td>${valor}</td>`;
-
-                // 🔹 Acumular totales
                 totales[v] += valor;
             });
         });
@@ -260,114 +272,14 @@ function renderTabla(data) {
         tablaResultadosBody.innerHTML += `<tr>${fila}</tr>`;
     });
 
-    // 🔹 Construir la fila de TOTALES
-    let filaTotales = `
-        <td colspan="6"><strong>TOTALES GENERALES</strong></td>
-    `;
+    // Totales
+    let filaTotales = `<td colspan="6"><strong>TOTALES GENERALES</strong></td>`;
 
-    Object.entries(apartados).forEach(([apartado, vars]) => {
+    Object.values(apartados).forEach(vars => {
         vars.forEach(v => {
             filaTotales += `<td><strong>${totales[v]}</strong></td>`;
         });
     });
 
     tablaFooter.innerHTML = `<tr class="table-secondary">${filaTotales}</tr>`;
-}
-
-function exportarExcel() {
-    if (!resultadosConsulta || resultadosConsulta.length === 0) {
-        alert("No hay resultados para exportar.");
-        return;
-    }
-
-    const datos = resultadosConsulta;
-
-    // --------------------------
-    // 1. Construir ENCABEZADOS
-    // --------------------------
-    const encabezadosFijos = [
-        "CLUES",
-        "Unidad",
-        "Entidad",
-        "Jurisdicción",
-        "Municipio",
-        "Institución"
-    ];
-
-    // Recolectar columnas dinámicas (apartados + variables)
-    const columnasDinamicas = [];
-
-    datos.forEach(r => {
-        r.biologicos.forEach(b => {
-            b.variables.forEach(v => {
-                if (!columnasDinamicas.includes(v.variable)) {
-                    columnasDinamicas.push(v.variable);
-                }
-            });
-        });
-    });
-
-    const encabezados = encabezadosFijos.concat(columnasDinamicas);
-
-    // --------------------------
-    // 2. Construir FILAS
-    // --------------------------
-    const filas = [];
-
-    datos.forEach(r => {
-        const fila = {
-            "CLUES": r.clues,
-            "Unidad": r.unidad.nombre ?? "",
-            "Entidad": r.unidad.entidad ?? "",
-            "Jurisdicción": r.unidad.jurisdiccion ?? "",
-            "Municipio": r.unidad.municipio ?? "",
-            "Institución": obtenerInicialesInstitucion(r.unidad.idinstitucion)
-        };
-
-        // Inicializar valores dinámicos
-        columnasDinamicas.forEach(v => {
-            fila[v] = 0;
-        });
-
-        // Llenar valores
-        r.biologicos.forEach(b => {
-            b.variables.forEach(v => {
-                fila[v.variable] = v.total ?? 0;
-            });
-        });
-
-        filas.push(fila);
-    });
-
-    // --------------------------
-    // 3. Crear Excel con SheetJS
-    // --------------------------
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(filas, { header: encabezados });
-
-    XLSX.utils.book_append_sheet(wb, ws, "Biológicos");
-
-    XLSX.writeFile(wb, "biologicos.xlsx");
-
-    alert("Excel generado correctamente 👍");
-}
-
-
-function mostrarSpinner() {
-    spinnerCarga.classList.remove("d-none");
-}
-function ocultarSpinner() {
-    spinnerCarga.classList.add("d-none");
-}
-
-function obtenerInicialesInstitucion(id) {
-    if (!id) return "";
-
-    // Convertir SIEMPRE a string y rellenar a 2 dígitos
-    const idFixed = id.toString().padStart(2, "0");
-
-    // Asegurar que el JSON también se compara como string
-    const inst = institucionesCatalogo.find(i => i.idinstitucion.toString().padStart(2, "0") === idFixed);
-
-    return inst ? inst.iniciales : "";
 }
