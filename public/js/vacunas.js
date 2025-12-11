@@ -393,10 +393,48 @@ async function exportarExcel() {
                 col++;
             });
 
+            const formulas = {
+                "FG": "=G@ + H@",
+                "FH": "=I@ + J@",
+                "FI": "=K@ + L@",
+                "FJ": "=M@ + N@",
+                "FK": "=O@ + P@",
+                "FL": "=Q@ + R@",
+                "FM": "=S@ + T@",
+                "FN": "=U@ + V@",
+                "FO": "=W@ + X@",
+                "FP": "=Y@ + Z@",
+                "FQ": "=AA@ + AB@",
+                "FR": "=AC@ + AD@",
+                "FS": "=AE@ + AF@",
+                "FT": "=AG@ + AH@",
+                "FU": "=AI@ + AJ@",
+                "FV": "=AK@ + AL@",
+                "FW": "=AM@ + AN@",
+                "FX": "=AO@ + AP@",
+                "FY": "=AQ@ + AR@"
+            };
+
+            Object.entries(formulas).forEach(([col, formula]) => {
+                // Reemplaza TODAS las @ por el número de fila
+const f = formula.replace(/@/g, fila).replace("=", "");  // quitar "="
+
+sheet.getCell(`${col}${fila}`).value = {
+    formula: f,   // ✔ fórmula sin "=" → Excel la reconoce
+    result: null  // ✔ Excel recalcula al abrir
+};
+
+                
+            });
+            console.log(sheet.getCell("FG5").value);
+
+
+
             fila++;
         });
 
         // Descargar archivo
+        workbook.calcProperties.fullCalcOnLoad = true;
         const outBuffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([outBuffer], {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
