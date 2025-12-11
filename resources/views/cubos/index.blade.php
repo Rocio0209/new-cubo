@@ -78,8 +78,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js" nonce="{{ csp_nonce() }}"></script>
 
 
-
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js" nonce="{{ csp_nonce() }}"></script>
 
 @endpush
 

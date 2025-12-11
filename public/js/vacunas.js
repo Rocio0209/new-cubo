@@ -7,6 +7,9 @@ let cluesDisponibles = [];
 let resultadosConsulta = [];
 let institucionesCatalogo = [];
 
+
+
+
 // ===============================
 // Spinner global
 // ===============================
@@ -52,6 +55,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Botones
     btnCargarClues.addEventListener("click", cargarClues);
     btnConsultar.addEventListener("click", consultarBiologicos);
+    btnExportar.addEventListener("click", exportarExcel);
+
 
     btnTodasHG.addEventListener("click", () => {
         const seleccionadas = cluesDisponibles.filter(c => c.startsWith("HG"));
@@ -149,7 +154,10 @@ function cargarClues() {
 // ===============================
 function consultarBiologicos() {
     const catalogo = catalogoSelect.value;
-    const clues_list = Array.from(cluesSelect.selectedOptions).map(o => o.value);
+    const clues_list = Array.from(cluesSelect.selectedOptions)
+    .map(o => o.value)
+    .filter(v => v && v.trim() !== "");
+
 
     mostrarSpinner();
 
@@ -296,3 +304,115 @@ function renderTabla(data) {
 
     tablaFooter.innerHTML = `<tr class="table-secondary">${filaTotales}</tr>`;
 }
+
+
+
+// ===============================
+// Construir datos aplanados para Excel
+// ===============================
+function construirDatosParaExcel() {
+    const filas = [];
+
+    // resultadosConsulta viene de consultarBiologicos()
+    resultadosConsulta.forEach(r => {
+        const base = {
+            clues: r.clues,
+            unidad: r.unidad.nombre ?? "",
+            entidad: r.unidad.entidad ?? "",
+            jurisdiccion: r.unidad.jurisdiccion ?? "",
+            municipio: r.unidad.municipio ?? "",
+            institucion: obtenerInicialesInstitucion(r.unidad.idinstitucion) ?? ""
+        };
+
+        // biologicos: [{apartado, grupos:[{grupo, variables:[{variable,total}]}]}]
+        r.biologicos.forEach(ap => {
+            ap.grupos.forEach(g => {
+                g.variables.forEach(v => {
+                    filas.push({
+                        ...base,
+                        apartado: ap.apartado,
+                        grupo: g.grupo,
+                        variable: v.variable,
+                        total: Number(v.total ?? 0)
+                    });
+                });
+            });
+        });
+    });
+
+    return filas;
+}
+
+
+// Construye un arreglo con todos los valores en orden EXACTO
+function construirFilaVariables(resultado) {
+    const lista = [];
+
+    resultado.biologicos.forEach(ap => {
+        ap.grupos.forEach(g => {
+            g.variables.forEach(v => {
+                lista.push(v.total ?? 0);
+            });
+        });
+    });
+
+    return lista;
+}
+
+
+async function exportarExcel() {
+
+    try {
+        mostrarSpinner();
+
+        const workbook = new ExcelJS.Workbook();
+        const response = await fetch("../static/Plantilla_CUBOS.xlsx");
+        const buffer = await response.arrayBuffer();
+        await workbook.xlsx.load(buffer);
+
+        const sheet = workbook.getWorksheet(1);
+        let fila = 5; // Donde empiezan tus datos en Excel
+
+        resultadosConsulta.forEach(r => {
+
+            // ======== COLUMNAS A–F (fijas) ========
+            sheet.getCell(`A${fila}`).value = r.clues;
+            sheet.getCell(`B${fila}`).value = r.unidad.nombre ?? "";
+            sheet.getCell(`C${fila}`).value = r.unidad.entidad ?? "";
+            sheet.getCell(`D${fila}`).value = r.unidad.jurisdiccion ?? "";
+            sheet.getCell(`E${fila}`).value = r.unidad.municipio ?? "";
+            sheet.getCell(`F${fila}`).value = obtenerInicialesInstitucion(r.unidad.idinstitucion);
+
+            // ======== VARIABLES ORDENADAS ========
+            const valores = construirFilaVariables(r);
+
+            let col = 7; // Columna G = 7
+
+            valores.forEach(v => {
+                sheet.getCell(fila, col).value = Number(v) || 0;
+                col++;
+            });
+
+            fila++;
+        });
+
+        // Descargar archivo
+        const outBuffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([outBuffer], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        });
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "Biologicos.xlsx";
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+    } catch (error) {
+        console.error("Error al exportar Excel:", error);
+        alert("Error al generar el archivo Excel.");
+    } finally {
+        ocultarSpinner();
+    }
+}
+
