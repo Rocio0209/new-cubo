@@ -155,8 +155,8 @@ function cargarClues() {
 function consultarBiologicos() {
     const catalogo = catalogoSelect.value;
     const clues_list = Array.from(cluesSelect.selectedOptions)
-    .map(o => o.value)
-    .filter(v => v && v.trim() !== "");
+        .map(o => o.value)
+        .filter(v => v && v.trim() !== "");
 
 
     mostrarSpinner();
@@ -402,29 +402,29 @@ async function exportarExcel() {
                 "FL": "=Q@ + R@",
                 "FM": "=S@ + T@",
                 "FN": "=U@ + V@",
-                "FO": "=W@ + X@",
+                "FO": "=G@ + H@ + I@ + M@ + DJ@ + DD@ + AB@",
                 "FP": "=Y@ + Z@",
                 "FQ": "=AA@ + AB@",
                 "FR": "=AC@ + AD@",
                 "FS": "=AE@ + AF@",
                 "FT": "=AG@ + AH@",
                 "FU": "=AI@ + AJ@",
-                "FV": "=AK@ + AL@",
+                "FV": "=DK@ + AC@ + AL@ + AM@",
                 "FW": "=AM@ + AN@",
-                "FX": "=AO@ + AP@",
-                "FY": "=AQ@ + AR@"
+                "FX": "=X@",
+                "FY": "=AN@"
             };
 
             Object.entries(formulas).forEach(([col, formula]) => {
                 // Reemplaza TODAS las @ por el número de fila
-const f = formula.replace(/@/g, fila).replace("=", "");  // quitar "="
+                const f = formula.replace(/@/g, fila).replace("=", "");  // quitar "="
 
-sheet.getCell(`${col}${fila}`).value = {
-    formula: f,   // ✔ fórmula sin "=" → Excel la reconoce
-    result: null  // ✔ Excel recalcula al abrir
-};
+                sheet.getCell(`${col}${fila}`).value = {
+                    formula: f,   // ✔ fórmula sin "=" → Excel la reconoce
+                    result: null  // ✔ Excel recalcula al abrir
+                };
 
-                
+
             });
             console.log(sheet.getCell("FG5").value);
 
