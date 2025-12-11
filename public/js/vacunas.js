@@ -394,10 +394,10 @@ async function exportarExcel() {
             });
 
             const formulas = {
-                "FG": "=G@ + H@",
-                "FH": "=I@ + J@",
-                "FI": "=K@ + L@",
-                "FJ": "=M@ + N@",
+                "FG": "IFERROR((G@+H@+I@)/((FC@*0.0833)*12),0)",
+                "FH": "IFERROR((M@)/((FC@*0.0833)*12),0)",
+                "FI": "IFERROR((DJ@)/((FC@*0.0833)*12),0)",
+                "FJ": "IFERROR((DJ@ + DH@)/((FC@*0.0833)*12),0)",
                 "FK": "=O@ + P@",
                 "FL": "=Q@ + R@",
                 "FM": "=S@ + T@",
@@ -417,12 +417,12 @@ async function exportarExcel() {
 
             Object.entries(formulas).forEach(([col, formula]) => {
                 // Reemplaza TODAS las @ por el número de fila
-                const f = formula.replace(/@/g, fila).replace("=", "");  // quitar "="
+                const f = formula.replace(/@/g, fila);  
 
-                sheet.getCell(`${col}${fila}`).value = {
-                    formula: f,   // ✔ fórmula sin "=" → Excel la reconoce
-                    result: null  // ✔ Excel recalcula al abrir
-                };
+    sheet.getCell(`${col}${fila}`).value = {
+        formula: f,      
+        result: null     
+    };
 
 
             });
