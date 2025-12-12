@@ -32,20 +32,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def obtener_valor_dim(cadena_conexion, cubo_mdx, dim, clues):
+def obtener_valor_dim(cadena_conexion, cubo_mdx, dim, clues, jerarquias):
+    jerarquia_real = resolver_dimension(dim, jerarquias)
+    if not jerarquia_real:
+        return None
+
     mdx = f"""
     SELECT
-    NON EMPTY {{ [{dim}].[{dim}].Members }} ON ROWS,
+    NON EMPTY {{ [{jerarquia_real}].[{jerarquia_real}].Members }} ON ROWS,
     {{ [Measures].DefaultMember }} ON COLUMNS
     FROM {cubo_mdx}
     WHERE ([CLUES].[CLUES].&[{clues}])
     """
     df = query_olap(cadena_conexion, mdx)
     if not df.empty:
-        valor = str(df.iloc[0, 0]) if pd.notna(df.iloc[0, 0]) else None
-        if valor:
-            return valor.split("].[")[-1].replace("]", "").strip()
+        return limpiar_nombre_mdx(df.iloc[0, 0])
     return None
+
 
 def limpiar_nombre_mdx(valor):
     if valor is None:
@@ -109,6 +112,19 @@ def sanitize_result(data):
     elif isinstance(data, dict):
         return {k: sanitize_result(v) for k, v in data.items()}
     return data
+
+DIMENSION_ALIAS = {
+    "Jurisdicción": ["Jurisdicción", "JURISDICCION"],
+    "Municipio": ["Municipio", "MUNICIPIO"],
+    "Unidad Médica": ["Unidad Médica", "NOMBRE UM", "Unidad Medica"],
+}
+def resolver_dimension(dim: str, jerarquias: list) -> str | None:
+    for candidato in DIMENSION_ALIAS.get(dim, [dim]):
+        if candidato in jerarquias:
+            return candidato
+    return None
+
+
 
 def formatear_cubo_mdx(cubo: str) -> str:
     if " " in cubo:
@@ -1103,6 +1119,15 @@ def biologicos_normalizados_con_migrantes(
         # 2. Configuración OLAP
         cubo_mdx = formatear_cubo_mdx(cubo)
         cadena_conexion = get_connection_string(catalogo)
+        conn_tmp = crear_conexion(catalogo)
+        jerarquias = ejecutar_query_lista(
+            conn_tmp,
+            f"SELECT HIERARCHY_NAME FROM $system.mdschema_hierarchies WHERE CUBE_NAME = '{cubo}'",
+            "HIERARCHY_NAME"
+        )
+        conn_tmp.Close()
+        pythoncom.CoUninitialize()
+
 
         resultados = []
         clues_no_encontradas = []
@@ -1163,12 +1188,24 @@ def biologicos_normalizados_con_migrantes(
 
                 raw_id = unidad_info.get("idinstitucion")
                 id_institucion = str(raw_id).zfill(2) if raw_id else None
+                jerarquias = ejecutar_query_lista(
+                        crear_conexion(catalogo),
+                        f"SELECT HIERARCHY_NAME FROM $system.mdschema_hierarchies WHERE CUBE_NAME = '{cubo}'",
+                        "HIERARCHY_NAME"
+                    )
 
                 geo_data = {
                     "nombre": unidad_info.get("nombre"),
-                    "entidad": obtener_valor_dim(cadena_conexion, cubo_mdx, "Entidad", clues),
-                    "jurisdiccion": obtener_valor_dim(cadena_conexion, cubo_mdx, "Jurisdicción", clues),
-                    "municipio": obtener_valor_dim(cadena_conexion, cubo_mdx, "Municipio", clues),
+                    "entidad": obtener_valor_dim(
+                        cadena_conexion, cubo_mdx, "Entidad", clues, jerarquias
+                    ),
+                    "jurisdiccion": obtener_valor_dim(
+                        cadena_conexion, cubo_mdx, "Jurisdicción", clues, jerarquias
+                    ),
+                    "municipio": obtener_valor_dim(
+                        cadena_conexion, cubo_mdx, "Municipio", clues, jerarquias
+                    ),
+
                     "idinstitucion": id_institucion
                 }
 
