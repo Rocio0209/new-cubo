@@ -398,38 +398,35 @@ async function exportarExcel() {
                 "FH": "IFERROR((M@)/((FC@*0.0833)*12),0)",
                 "FI": "IFERROR((DJ@)/((FC@*0.0833)*12),0)",
                 "FJ": "IFERROR((DJ@ + DH@)/((FC@*0.0833)*12),0)",
-                "FK": "=O@ + P@",
-                "FL": "=Q@ + R@",
-                "FM": "=S@ + T@",
-                "FN": "=U@ + V@",
+                "FK": "IFERROR((DD@ + DF@)/((FC@*0.0833)*12),0)",
+                "FL": "IFERROR((12)/((FC@*0.0833)*12),0)",
+                "FM": "IFERROR((DD@ + DF@)/((FC@*0.0833)*12),0)",
+                "FN": "IFERROR((AB@)/((FC@*0.0833)*12),0)",
                 "FO": "=G@ + H@ + I@ + M@ + DJ@ + DD@ + AB@",
-                "FP": "=Y@ + Z@",
-                "FQ": "=AA@ + AB@",
-                "FR": "=AC@ + AD@",
-                "FS": "=AE@ + AF@",
-                "FT": "=AG@ + AH@",
-                "FU": "=AI@ + AJ@",
+                "FP": "IFERROR((FO@)/((FC@*0.0833)*4),0)",
+                "FQ": "IFERROR((DK@)/((FD@*0.0833)*12),0)",
+                "FR": "IFERROR((AC@)/((FD@*0.0833)*12),0)",
+                "FS": "IFERROR((AL@)/((FD@*0.0833)*12),0)",
+                "FT": "IFERROR((AM@)/((FD@*0.0833)*12),0)",
+                "FU": "IFERROR((AN@)/((FD@*0.0833)*12),0)",
                 "FV": "=DK@ + AC@ + AL@ + AM@",
-                "FW": "=AM@ + AN@",
-                "FX": "=X@",
-                "FY": "=AN@"
+                "FW": "IFERROR((FV@)/((FD@*0.0833)*4),0)",
+                "FX": "IFERROR((X@)/((FE@*0.0833)*12),0)",
+                "FY": "IFERROR((AN@)/((FF@*0.0833)*12),0)",
             };
 
             Object.entries(formulas).forEach(([col, formula]) => {
                 // Reemplaza TODAS las @ por el número de fila
-                const f = formula.replace(/@/g, fila);  
+                const f = formula.replace(/@/g, fila);
 
-    sheet.getCell(`${col}${fila}`).value = {
-        formula: f,      
-        result: null     
-    };
+                sheet.getCell(`${col}${fila}`).value = {
+                    formula: f,
+                    result: null
+                };
 
 
             });
             console.log(sheet.getCell("FG5").value);
-
-
-
             fila++;
         });
 
