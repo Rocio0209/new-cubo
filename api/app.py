@@ -47,6 +47,23 @@ def obtener_valor_dim(cadena_conexion, cubo_mdx, dim, clues):
             return valor.split("].[")[-1].replace("]", "").strip()
     return None
 
+def limpiar_nombre_mdx(valor):
+    if valor is None:
+        return None
+
+    s = str(valor).strip()
+    if not s:
+        return None
+
+    if '].&[' in s:
+        return s.split('].&[')[-1].rstrip(']')
+
+    if '].[' in s:
+        return s.split('].[')[-1].rstrip(']')
+
+    return s.strip('[]')
+
+
 def crear_conexion(catalogo: str = None):
     pythoncom.CoInitialize()
     conn = win32com.client.Dispatch("ADODB.Connection")
@@ -92,6 +109,12 @@ def sanitize_result(data):
     elif isinstance(data, dict):
         return {k: sanitize_result(v) for k, v in data.items()}
     return data
+
+def formatear_cubo_mdx(cubo: str) -> str:
+    if " " in cubo:
+        return f'"{cubo}"'
+    return f'[{cubo}]'
+
 
 def extraer_edad_inicial(nombre_variable: str) -> int:
     """
@@ -431,7 +454,7 @@ def miembros_jerarquia(
         df = query_olap(cadena_conexion, mdx)
         df = df.rename(columns=lambda x: x.strip())
 
-        miembros = [{"nombre": row[0]} for _, row in df.iterrows()]
+        miembros = [{"nombre": row.iloc[0]} for _, row in df.iterrows()]
         return {"jerarquia": jerarquia_completa, "miembros": miembros}
 
     except Exception as e:
@@ -445,7 +468,7 @@ def biologicos_por_clues(catalogo: str, cubo: str, clues: str):
     
     try:
         # Configuración inicial
-        cubo_mdx = f'[{cubo}]'
+        cubo_mdx = formatear_cubo_mdx(cubo)
         cadena_conexion = get_connection_string(catalogo)
 
         # 1. Verificar que la CLUES existe
@@ -495,7 +518,7 @@ def biologicos_por_clues(catalogo: str, cubo: str, clues: str):
                 df_geo = query_olap(cadena_conexion, mdx_geo)
                 if not df_geo.empty:
                     for i, row in df_geo.iterrows():
-                        cell_value = str(row[0]) if pd.notna(row[0]) else None
+                        cell_value = str(row.iloc[0]) if pd.notna(row.iloc[0]) else None
                         if cell_value:
                             if "[Entidad].[Entidad]" in cell_value:
                                 geo_data["entidad"] = cell_value.split("].[")[-1].replace("]", "").strip()
@@ -581,8 +604,8 @@ def biologicos_por_clues(catalogo: str, cubo: str, clues: str):
                 
                 apartados_biologicos = []
                 for _, row in df_apartados.iterrows():
-                    if row[0] and 'APLICACIÓN DE BIOLÓGICOS' in row[0].upper():
-                        apartado = row[0].split('.')[-1].replace('[', '').replace(']', '')
+                    if row.iloc[0] and 'APLICACIÓN DE BIOLÓGICOS' in row.iloc[0].upper():
+                        apartado = row.iloc[0].split('.')[-1].replace('[', '').replace(']', '')
                         apartados_biologicos.append(apartado)
                 
                 # Para cada apartado de biológicos, obtener sus variables
@@ -599,10 +622,10 @@ def biologicos_por_clues(catalogo: str, cubo: str, clues: str):
                     
                     variables_con_valores = []
                     for _, row in df_variables.iterrows():
-                        if len(row) >= 2 and row[0] and pd.notna(row[1]):
-                            nombre_variable = row[0].split('.')[-1].replace('[', '').replace(']', '')
+                        if len(row) >= 2 and row.iloc[0] and pd.notna(row.iloc[1]):
+                            nombre_variable = row.iloc[0].split('.')[-1].replace('[', '').replace(']', '')
                             try:
-                                valor = int(float(row[1])) if pd.notna(row[1]) else None
+                                valor = int(float(row.iloc[1])) if pd.notna(row.iloc[1]) else None
                             except:
                                 valor = None
                             
@@ -707,7 +730,7 @@ def biologicos_por_multiples_clues(
         unidades_dict = {um["clues"]: um for um in unidades_medicas}
 
         # 2. Configuración inicial del cubo OLAP
-        cubo_mdx = f'[{cubo}]'
+        cubo_mdx = formatear_cubo_mdx(cubo)
         cadena_conexion = get_connection_string(catalogo)
 
         resultados = []
@@ -767,8 +790,8 @@ def biologicos_por_multiples_clues(
                         
                         apartados_biologicos = []
                         for _, row in df_apartados.iterrows():
-                            if row[0] and 'APLICACIÓN DE BIOLÓGICOS' in row[0].upper():
-                                apartado = row[0].split('].[')[-1].replace(']', '').strip()
+                            if row.iloc[0] and 'APLICACIÓN DE BIOLÓGICOS' in row.iloc[0].upper():
+                                apartado = row.iloc[0].split('].[')[-1].replace(']', '').strip()
                                 apartados_biologicos.append(apartado)
                         
                         # Procesar cada apartado
@@ -788,9 +811,9 @@ def biologicos_por_multiples_clues(
                             tiene_migrantes = False
                             
                             for _, row in df_variables.iterrows():
-                                if len(row) >= 2 and row[0] and pd.notna(row[1]):
+                                if len(row) >= 2 and row.iloc[0] and pd.notna(row.iloc[1]):
                                     # Extraer nombre completo
-                                    full_variable_name = row[0]
+                                    full_variable_name = row.iloc[0]
                                     if '].&[' in full_variable_name:
                                         full_variable_name = full_variable_name.split('].&[')[-1].rstrip(']')
                                     elif '].[' in full_variable_name:
@@ -799,7 +822,7 @@ def biologicos_por_multiples_clues(
                                         full_variable_name = full_variable_name.strip('[]')
                                     
                                     try:
-                                        valor = int(float(row[1])) if pd.notna(row[1]) else None
+                                        valor = int(float(row.iloc[1])) if pd.notna(row.iloc[1]) else None
                                     except:
                                         valor = None
                                     
@@ -912,7 +935,7 @@ def biologicos_normalizados(
         unidades_dict = {um["clues"]: um for um in unidades_medicas}
 
         # 2. Configuración OLAP
-        cubo_mdx = f'[{cubo}]'
+        cubo_mdx = formatear_cubo_mdx(cubo)
         cadena_conexion = get_connection_string(catalogo)
 
         resultados = []
@@ -929,8 +952,8 @@ def biologicos_normalizados(
 
         todas_las_variables = {}
         for _, row in df_apartados.iterrows():
-            if row[0] and 'APLICACIÓN DE BIOLÓGICOS' in row[0].upper():
-                apartado = row[0].split('].[')[-1].replace(']', '').strip()
+            if row.iloc[0] and 'APLICACIÓN DE BIOLÓGICOS' in row.iloc[0].upper():
+                apartado = row.iloc[0].split('].[')[-1].replace(']', '').strip()
                 mdx_vars = f"""
                 SELECT
                 NON EMPTY {{ [Variable].[Variable].MEMBERS }} ON ROWS,
@@ -941,7 +964,9 @@ def biologicos_normalizados(
                 df_vars = query_olap(cadena_conexion, mdx_vars)
                 variables = []
                 for _, vrow in df_vars.iterrows():
-                    var_name = vrow[0]
+                    if not var_name:
+                        continue
+                    var_name = vrow.iloc[0]
                     if '].&[' in var_name:
                         var_name = var_name.split('].&[')[-1].rstrip(']')
                     elif '].[' in var_name:
@@ -984,7 +1009,7 @@ def biologicos_normalizados(
                     df_vars = query_olap(cadena_conexion, mdx_clues)
 
                     for _, vrow in df_vars.iterrows():
-                        var_name = vrow[0]
+                        var_name = vrow.iloc[0]
                         if '].&[' in var_name:
                             var_name = var_name.split('].&[')[-1].rstrip(']')
                         elif '].[' in var_name:
@@ -992,7 +1017,7 @@ def biologicos_normalizados(
                         else:
                             var_name = var_name.strip('[]')
                         try:
-                            valor = int(float(vrow[1])) if pd.notna(vrow[1]) else 0
+                            valor = int(float(vrow.iloc[1])) if pd.notna(vrow.iloc[1]) else 0
                         except:
                             valor = 0
                         valores[var_name] = valor
@@ -1076,7 +1101,7 @@ def biologicos_normalizados_con_migrantes(
         instituciones_dict = {inst["idinstitucion"]: inst for inst in instituciones}
 
         # 2. Configuración OLAP
-        cubo_mdx = f'[{cubo}]'
+        cubo_mdx = formatear_cubo_mdx(cubo)
         cadena_conexion = get_connection_string(catalogo)
 
         resultados = []
@@ -1093,8 +1118,8 @@ def biologicos_normalizados_con_migrantes(
 
         todas_las_variables = {}
         for _, row in df_apartados.iterrows():
-            if row[0] and 'APLICACIÓN DE BIOLÓGICOS' in row[0].upper():
-                apartado = row[0].split('].[')[-1].replace(']', '').strip()
+            if row.iloc[0] and 'APLICACIÓN DE BIOLÓGICOS' in row.iloc[0].upper():
+                apartado = row.iloc[0].split('].[')[-1].replace(']', '').strip()
 
                 mdx_vars = f"""
                 SELECT
@@ -1108,13 +1133,15 @@ def biologicos_normalizados_con_migrantes(
 
                 variables = []
                 for _, vrow in df_vars.iterrows():
-                    var_name = vrow[0]
-                    if '].&[' in var_name:
-                        var_name = var_name.split('].&[')[-1].rstrip(']')
-                    elif '].[' in var_name:
-                        var_name = var_name.split('].[')[-1].rstrip(']')
-                    else:
-                        var_name = var_name.strip('[]')
+                    raw_name = vrow.iloc[0]
+
+                    if raw_name is None or pd.isna(raw_name):
+                        continue
+
+                    var_name = limpiar_nombre_mdx(raw_name)
+                    if not var_name:
+                        continue
+
                     variables.append(var_name)
 
                 todas_las_variables[apartado] = variables
@@ -1164,17 +1191,22 @@ def biologicos_normalizados_con_migrantes(
 
                     # Procesar las variables de ese apartado
                     for _, vrow in df_vars.iterrows():
-                        var_name = vrow[0]
-                        if '].&[' in var_name:
-                            var_name = var_name.split('].&[')[-1].rstrip(']')
-                        elif '].[' in var_name:
-                            var_name = var_name.split('].[')[-1].rstrip(']')
-                        else:
-                            var_name = var_name.strip('[]')
+                        raw_name = vrow.iloc[0]
+                        raw_value = vrow.iloc[1]
 
-                        valor = int(float(vrow[1])) if pd.notna(vrow[1]) else 0
+                        # 1. Validar nombre crudo
+                        if raw_name is None or pd.isna(raw_name):
+                            continue
 
-                        # Consolidar migrantes
+                        # 2. Limpiar nombre MDX
+                        var_name = limpiar_nombre_mdx(raw_name)
+                        if not var_name:
+                            continue
+
+                        # 3. Obtener valor
+                        valor = int(float(raw_value)) if pd.notna(raw_value) else 0
+
+                        # 4. Separar migrantes
                         if "MIGRANTE" in var_name.upper():
                             total_migrantes += valor
                         else:
@@ -1184,7 +1216,7 @@ def biologicos_normalizados_con_migrantes(
                     variables_normales = [
                         {"variable": var, "total": valores.get(var, 0)}
                         for var in variables
-                        if "MIGRANTE" not in var.upper()
+                        if var and "MIGRANTE" not in var.upper()
                     ]
 
                     # Ordenar por edad
@@ -1257,7 +1289,7 @@ def biologicos_normalizados_con_migrantes(
 @app.get("/clues_filtradas")
 def clues_filtradas(catalogo: str, cubo: str, prefijo: str):
     try:
-        cubo_mdx = f'[{cubo}]'
+        cubo_mdx = formatear_cubo_mdx(cubo)
         cadena_conexion = get_connection_string(catalogo)
 
         mdx = f"""
@@ -1272,7 +1304,7 @@ def clues_filtradas(catalogo: str, cubo: str, prefijo: str):
         # Extraer nombre limpio
         clues = []
         for _, row in df.iterrows():
-            nombre = row[0]
+            nombre = row.iloc[0]
             if nombre:
                 valor = nombre.split("].[")[-1].replace("]", "")
                 if valor.startswith(prefijo):
