@@ -144,6 +144,8 @@ document.addEventListener("DOMContentLoaded", () => {
     btnCargarClues.addEventListener("click", cargarClues);
     btnConsultar.addEventListener("click", consultarBiologicos);
     btnExportar.addEventListener("click", exportarExcel);
+    const btnExportarSimple = document.getElementById('btnExportarSimple');
+btnExportarSimple.addEventListener("click", exportarTablaHTML);
 
 
     // btnTodasHG.addEventListener("click", () => {
@@ -556,3 +558,110 @@ async function exportarExcel() {
     }
 }
 
+// ===============================
+// Descargar Tabla HTML como Excel Simple
+// ===============================
+async function exportarTablaHTML() {
+    try {
+        mostrarSpinner();
+
+        // Crear un nuevo libro de trabajo
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Resultados');
+
+        // 1. Obtener encabezados de la tabla HTML
+        const tabla = document.getElementById('tablaResultados');
+        const encabezadosFijos = [];
+        const encabezadosVariables = [];
+
+        // Procesar la primera fila de encabezados (que usa rowspan)
+        const filaPrincipal = tabla.querySelector('#tablaHeader');
+        if (filaPrincipal) {
+            const celdas = filaPrincipal.querySelectorAll('th');
+            celdas.forEach(celda => {
+                const texto = celda.innerText.trim();
+                const colspan = parseInt(celda.getAttribute('colspan')) || 1;
+                // Si tiene colspan, son variables agrupadas por apartado
+                if (colspan > 1) {
+                    for (let i = 0; i < colspan; i++) {
+                        // Marcador temporal, será reemplazado
+                        encabezadosVariables.push(`VAR_${encabezadosVariables.length}`);
+                    }
+                } else if (texto) {
+                    // Son encabezados fijos (CLUES, Unidad, etc.)
+                    encabezadosFijos.push(texto);
+                }
+            });
+        }
+
+        // 2. Reemplazar marcadores con nombres reales de variables
+        const filaVariables = tabla.querySelector('#variablesHeader');
+        if (filaVariables && encabezadosVariables.length > 0) {
+            const vars = filaVariables.querySelectorAll('th');
+            vars.forEach((v, index) => {
+                if (index < encabezadosVariables.length) {
+                    encabezadosVariables[index] = v.innerText.trim();
+                }
+            });
+        }
+
+        // 3. Combinar todos los encabezados
+        const todosEncabezados = [...encabezadosFijos, ...encabezadosVariables];
+
+        // 4. Agregar fila de encabezados a la hoja de Excel
+        worksheet.addRow(todosEncabezados);
+
+        // 5. Aplicar formato básico a los encabezados
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true, size: 12 };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // 6. Obtener datos del cuerpo de la tabla
+        const filasDatos = tabla.querySelectorAll('#tablaResultadosBody tr');
+        filasDatos.forEach(filaHTML => {
+            const celdas = filaHTML.querySelectorAll('td');
+            const datosFila = Array.from(celdas).map(celda => celda.innerText.trim());
+            worksheet.addRow(datosFila);
+        });
+
+        // 7. Ajustar el ancho de las columnas automáticamente
+        worksheet.columns = todosEncabezados.map(() => ({
+            width: 15 // Ancho uniforme, puedes ajustarlo
+        }));
+
+        // 8. Descargar el archivo
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Resultados_Consulta_${new Date().toISOString().slice(0,10)}.xlsx`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+        ocultarSpinner();
+
+    } catch (error) {
+        console.error('Error al exportar tabla HTML a Excel:', error);
+        alert('Hubo un problema al generar el archivo Excel simple.');
+        ocultarSpinner();
+    }
+}
+
+resultadosContainer.classList.remove("d-none");
+btnExportar.disabled = false;
+// 🔹 Habilitar también el nuevo botón
+btnExportarSimple.disabled = false;
+
+// En la función resetearInterfaz():
+btnExportarSimple.disabled = true;
+
+// En el event listener de btnLimpiarClues:
+btnExportarSimple.disabled = true;
