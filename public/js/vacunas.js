@@ -7,7 +7,9 @@ let cluesDisponibles = [];
 let resultadosConsulta = [];
 let institucionesCatalogo = [];
 
-
+function ocultarAccionesSelect2() {
+    $('.select2-actions').remove();
+}
 
 
 // ===============================
@@ -21,6 +23,42 @@ function ocultarSpinner() {
     spinnerCarga.classList.add("d-none");
 }
 
+function resetearInterfaz() {
+    // Limpiar tabla de resultados
+    const tablaHeader = document.getElementById('tablaHeader');
+    const variablesHeader = document.getElementById('variablesHeader');
+    const tablaResultadosBody = document.getElementById('tablaResultadosBody');
+    const tablaFooter = document.getElementById('tablaFooter');
+    const resumenConsulta = document.getElementById('resumenConsulta');
+    const resultadosContainer = document.getElementById('resultadosContainer');
+    const mensajeCluesCargadas = document.getElementById('mensajeCluesCargadas');
+    const btnConsultar = document.getElementById('btnConsultar');
+    const btnExportar = document.getElementById('btnExportar');
+    
+    // Limpiar contenido de la tabla
+    tablaHeader.innerHTML = "";
+    variablesHeader.innerHTML = "";
+    tablaResultadosBody.innerHTML = "";
+    tablaFooter.innerHTML = "";
+    resumenConsulta.innerHTML = "";
+    
+    // Ocultar secciones
+    resultadosContainer.classList.add("d-none");
+    
+    // Deshabilitar botones (excepto consultar si hay CLUES disponibles)
+    btnConsultar.disabled = cluesDisponibles.length === 0;
+    btnExportar.disabled = true;
+    
+    // Limpiar variables
+    resultadosConsulta = [];
+    cluesDisponibles = [];
+    cuboActivo = null;
+    
+    // Limpiar y deshabilitar select de CLUES
+    const cluesSelect = document.getElementById('cluesSelect');
+    $('#cluesSelect').empty().trigger('change');
+    cluesSelect.disabled = true;
+}
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -31,18 +69,68 @@ document.addEventListener("DOMContentLoaded", () => {
         placeholder: "Selecciona una o más CLUES",
         width: '100%',
         theme: 'bootstrap-5',
-        allowClear: true
+        allowClear: false,
+        closeOnSelect: false
     });
+    $('#cluesSelect').on('select2:open', function () {
+
+    const dropdown = $('.select2-dropdown');
+
+    // Evitar duplicados
+    if (dropdown.find('.select2-actions').length) return;
+
+    const acciones = $(`
+        <div class="select2-actions px-2 pb-2 border-bottom mb-2">
+            <div class="d-flex gap-2">
+                <button type="button"
+                        class="btn btn-sm btn-warning w-50"
+                        id="btnSelectAllHGIMB">
+                    Seleccionar todas HGIMB
+                </button>
+                <button type="button"
+                        class="btn btn-sm btn-primary w-50"
+                        id="btnSelectAllHG">
+                    Seleccionar todas HG
+                </button>
+            </div>
+        </div>
+    `);
+
+    dropdown.prepend(acciones);
+
+    // 🔹 Seleccionar HG
+    $('#btnSelectAllHG').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const seleccionadas = cluesDisponibles.filter(c => c.startsWith("HG"));
+        $('#cluesSelect').val(seleccionadas).trigger('change');
+        ocultarAccionesSelect2();
+        $('#cluesSelect').select2('close');
+    });
+
+    // 🔹 Seleccionar HGIMB
+    $('#btnSelectAllHGIMB').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        $('#cluesSelect').val(cluesDisponibles).trigger('change');
+        ocultarAccionesSelect2();
+        $('#cluesSelect').select2('close');
+    });
+});
+
 
     cargarCatalogos();
 
     // 🔹 Cuando cambias el catálogo, se limpia el select
     catalogoSelect.addEventListener("change", () => {
-        btnCargarClues.disabled = !catalogoSelect.value;
-
-        $("#cluesSelect").empty().trigger("change");
-        cluesSelect.disabled = true;
-    });
+    // Resetear toda la interfaz
+    resetearInterfaz();
+    
+    // Habilitar/deshabilitar botón de cargar CLUES
+    btnCargarClues.disabled = !catalogoSelect.value;
+});
 
     // Cargar instituciones
     fetch("/instituciones-json")
@@ -58,34 +146,51 @@ document.addEventListener("DOMContentLoaded", () => {
     btnExportar.addEventListener("click", exportarExcel);
 
 
-    btnTodasHG.addEventListener("click", () => {
-        const seleccionadas = cluesDisponibles.filter(c => c.startsWith("HG"));
-        $("#cluesSelect").val(seleccionadas).trigger("change");
-    });
+    // btnTodasHG.addEventListener("click", () => {
+    //     const seleccionadas = cluesDisponibles.filter(c => c.startsWith("HG"));
+    //     $("#cluesSelect").val(seleccionadas).trigger("change");
+    // });
 
-    btnTodasHGIMB.addEventListener("click", () => {
-        const catalogo = catalogoSelect.value;
+    // btnTodasHGIMB.addEventListener("click", () => {
+    //     const catalogo = catalogoSelect.value;
 
-        mostrarSpinner();
+    //     mostrarSpinner();
 
-        fetch(`${API_FASTAPI}/clues_filtradas?catalogo=${catalogo}&cubo=${cuboActivo}&prefijo=HGIMB`)
-            .then(r => r.json())
-            .then(data => {
-                cluesDisponibles = data.clues;
+    //     fetch(`${API_FASTAPI}/clues_filtradas?catalogo=${catalogo}&cubo=${cuboActivo}&prefijo=HGIMB`)
+    //         .then(r => r.json())
+    //         .then(data => {
+    //             cluesDisponibles = data.clues;
 
-                $("#cluesSelect").empty();
-                cluesDisponibles.forEach(c => {
-                    $("#cluesSelect").append(new Option(c, c));
-                });
+    //             $("#cluesSelect").empty();
+    //             cluesDisponibles.forEach(c => {
+    //                 $("#cluesSelect").append(new Option(c, c));
+    //             });
 
-                $("#cluesSelect").val(cluesDisponibles).trigger("change");
-            })
-            .finally(ocultarSpinner);
-    });
+    //             $("#cluesSelect").val(cluesDisponibles).trigger("change");
+    //         })
+    //         .finally(ocultarSpinner);
+    // });
 
 });
 ;
 
+document.getElementById('btnLimpiarClues').addEventListener('click', function() {
+    $('#cluesSelect').val(null).trigger('change');
+     // 2. Limpiar la tabla de resultados
+    tablaHeader.innerHTML = "";
+    variablesHeader.innerHTML = "";
+    tablaResultadosBody.innerHTML = "";
+    tablaFooter.innerHTML = "";
+    resumenConsulta.innerHTML = "";
+    resultadosContainer.classList.add("d-none");
+    
+    // 3. Deshabilitar botones de consulta/exportación
+    btnConsultar.disabled = false; // Mantener habilitado porque hay CLUES disponibles
+    btnExportar.disabled = true;
+    
+    // 4. Limpiar variable de resultados
+    resultadosConsulta = [];
+});
 
 // ===============================
 // Cargar catálogos
@@ -140,8 +245,8 @@ function cargarClues() {
 
             cluesSelect.disabled = false;
             btnConsultar.disabled = false;
-            btnTodasHG.disabled = false;
-            btnTodasHGIMB.disabled = false;
+            // btnTodasHG.disabled = false;
+            // btnTodasHGIMB.disabled = false;
 
             mensajeCluesCargadas.classList.remove("d-none");
         })

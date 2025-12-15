@@ -764,3 +764,13 @@ a.activaMenu{
     background-color: #EBE5E5 !important;
     border-radius: 10px;
 }
+
+#cluesSelect {
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#btnLimpiarClues {
+    white-space: nowrap;
+}
