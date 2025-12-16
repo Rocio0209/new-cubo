@@ -598,6 +598,9 @@ function construirEstructuraEncabezados() {
 // ===============================
 // Nueva función: exportar con encabezados combinados
 // ===============================
+// ===============================
+// Nueva función: exportar con encabezados combinados y colores
+// ===============================
 async function exportarTablaHTML() {
     try {
         mostrarSpinner();
@@ -609,16 +612,35 @@ async function exportarTablaHTML() {
         // 2. Obtener la estructura de apartados y variables desde resultadosConsulta
         const estructura = construirEstructuraEncabezados();
         
-        // 3. Crear fila 1: Apartados (con celdas combinadas)
+        // 3. Paleta de colores para apartados (puedes modificar estos colores)
+        const coloresApartados = [
+            'FF4F81BD', // Azul oscuro
+            'FF9BBB59', // Verde
+            'FFC0504D', // Rojo
+            'FFF79646', // Naranja
+            'FF8064A2', // Morado
+            'FF4BACC6', // Azul claro
+            'FF9BBB59', // Verde
+            'FFF79646', // Naranja
+            'FFC0504D', // Rojo
+            'FF8064A2', // Morado
+            'FF4F81BD', // Azul oscuro
+            'FF4BACC6', // Azul claro
+            'FF9BBB59', // Verde
+            'FFF79646', // Naranja
+            'FFC0504D', // Rojo
+        ];
+        
+        // 4. Crear fila 1: Apartados (con celdas combinadas)
         const filaApartados = [];
         const filaVariables = [];
         
-        // Columnas fijas (A-F) - agregar a ambas filas pero las combinaremos
+        // Columnas fijas (A-F) - agregar a ambas filas
         filaApartados.push('CLUES', 'Unidad', 'Entidad', 'Jurisdicción', 'Municipio', 'Institución');
         filaVariables.push('CLUES', 'Unidad', 'Entidad', 'Jurisdicción', 'Municipio', 'Institución');
         
         // Variables dinámicas por apartado
-        estructura.forEach(apartado => {
+        estructura.forEach((apartado, index) => {
             // Agregar apartado a fila 1 (vacío repetido para cada variable)
             for (let i = 0; i < apartado.variables.length; i++) {
                 filaApartados.push(apartado.nombre);
@@ -626,50 +648,87 @@ async function exportarTablaHTML() {
             }
         });
         
-        // 4. Agregar filas al Excel
+        // 5. Agregar filas al Excel
         worksheet.addRow(filaApartados);  // Fila 1: Apartados
         worksheet.addRow(filaVariables);  // Fila 2: Variables
         
-        // 5. COMBINAR CELDAS VERTICALMENTE PARA COLUMNAS A-F
+        // 6. COMBINAR CELDAS VERTICALMENTE PARA COLUMNAS A-F
         for (let col = 1; col <= 6; col++) {
             worksheet.mergeCells(1, col, 2, col);
         }
         
-        // 6. Combinar celdas de apartados en fila 1 (a partir de columna G)
+        // 7. Aplicar formato a encabezados fijos (columnas A-F)
+        for (let col = 1; col <= 6; col++) {
+            const cell1 = worksheet.getCell(1, col);
+            cell1.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+            cell1.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: '691C32' } // Color específico para columnas A-F
+            };
+            cell1.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell1.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        }
+        
+        // 8. Combinar celdas de apartados en fila 1 y aplicar colores
         let colInicio = 7; // Columna G = 7 (después de las 6 fijas)
         
-        estructura.forEach(apartado => {
+        estructura.forEach((apartado, index) => {
             const numVariables = apartado.variables.length;
+            const colorIndex = index % coloresApartados.length;
+            const color = coloresApartados[colorIndex];
+            
             if (numVariables > 1) {
                 worksheet.mergeCells(1, colInicio, 1, colInicio + numVariables - 1);
             }
+            
+            // Aplicar color al apartado (fila 1)
+            const cellApartado = worksheet.getCell(1, colInicio);
+            cellApartado.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+            cellApartado.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: color }
+            };
+            cellApartado.alignment = { vertical: 'middle', horizontal: 'center' };
+            cellApartado.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+            
+            // Aplicar color más claro a las variables (fila 2)
+            for (let i = 0; i < numVariables; i++) {
+                const cellVariable = worksheet.getCell(2, colInicio + i);
+                cellVariable.font = { bold: true, size: 11 };
+                cellVariable.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: color.replace('FF', '80') } // Versión más transparente
+                };
+                cellVariable.alignment = { vertical: 'middle', horizontal: 'center' };
+                cellVariable.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            }
+            
             colInicio += numVariables;
         });
         
-        // 7. Aplicar formato a encabezados
-        // Fila 1 (Apartados) - incluyendo columnas A-F que ahora están combinadas
-        const row1 = worksheet.getRow(1);
-        row1.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-        row1.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FF2E75B6' } // Azul
-        };
-        row1.alignment = { vertical: 'middle', horizontal: 'center' };
-        row1.height = 25;
+        // 9. Ajustar altura de filas
+        worksheet.getRow(1).height = 25;
+        worksheet.getRow(2).height = 20;
         
-        // Fila 2 (Variables) - solo para columnas G en adelante
-        const row2 = worksheet.getRow(2);
-        row2.font = { bold: true, size: 11 };
-        row2.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFDDEBF7' } // Azul claro
-        };
-        row2.alignment = { vertical: 'middle', horizontal: 'center' };
-        row2.height = 20;
-        
-        // 8. Agregar datos de cada CLUES
+        // 10. Agregar datos de cada CLUES
         let fila = 3; // Comenzar en fila 3
         
         resultadosConsulta.forEach(r => {
@@ -718,7 +777,25 @@ async function exportarTablaHTML() {
             fila++;
         });
         
-        // 9. Ajustar ancho de columnas automáticamente
+        // 11. Aplicar bordes a todas las celdas de datos
+        for (let rowNum = 3; rowNum <= worksheet.rowCount; rowNum++) {
+            const row = worksheet.getRow(rowNum);
+            row.eachCell((cell, colNumber) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                
+                // Alinear números a la derecha para columnas de datos (G en adelante)
+                if (colNumber > 6 && typeof cell.value === 'number') {
+                    cell.alignment = { horizontal: 'right' };
+                }
+            });
+        }
+        
+        // 12. Ajustar ancho de columnas automáticamente
         worksheet.columns = filaVariables.map((header, index) => {
             // Columnas fijas más anchas (A-F)
             if (index < 6) {
@@ -728,26 +805,12 @@ async function exportarTablaHTML() {
             return { width: 15 };
         });
         
-        // 10. Congelar las primeras 2 filas (encabezados)
+        // 13. Congelar las primeras 2 filas (encabezados)
         worksheet.views = [
             { state: 'frozen', ySplit: 2 }
         ];
         
-        // 11. Agregar bordes a todas las celdas de encabezados
-        [1, 2].forEach(rowNum => {
-            const row = worksheet.getRow(rowNum);
-            // Solo bordes para columnas con contenido (el resto ya tiene bordes por defecto)
-            row.eachCell((cell, colNumber) => {
-                cell.border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-            });
-        });
-        
-        // 12. Descargar archivo
+        // 14. Descargar archivo
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -766,6 +829,39 @@ async function exportarTablaHTML() {
         alert('Hubo un problema al generar el archivo Excel.');
         ocultarSpinner();
     }
+}
+
+// ===============================
+// Función auxiliar: construir estructura de encabezados
+// ===============================
+function construirEstructuraEncabezados() {
+    const estructura = [];
+    
+    if (resultadosConsulta.length === 0) {
+        console.warn('No hay resultados para construir encabezados');
+        return estructura;
+    }
+    
+    // Tomar el primer resultado como referencia para la estructura
+    const primerResultado = resultadosConsulta[0];
+    
+    primerResultado.biologicos.forEach(apartado => {
+        const variables = [];
+        
+        // Recolectar todas las variables de este apartado (de todos los grupos)
+        apartado.grupos.forEach(grupo => {
+            grupo.variables.forEach(variable => {
+                variables.push(variable.variable);
+            });
+        });
+        
+        estructura.push({
+            nombre: apartado.apartado,
+            variables: variables
+        });
+    });
+    
+    return estructura;
 }
 
 resultadosContainer.classList.remove("d-none");
