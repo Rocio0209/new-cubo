@@ -561,96 +561,209 @@ async function exportarExcel() {
 // ===============================
 // Descargar Tabla HTML como Excel Simple
 // ===============================
+
+// ===============================
+// Función auxiliar: construir estructura de encabezados
+// ===============================
+function construirEstructuraEncabezados() {
+    const estructura = [];
+    
+    if (resultadosConsulta.length === 0) {
+        console.warn('No hay resultados para construir encabezados');
+        return estructura;
+    }
+    
+    // Tomar el primer resultado como referencia para la estructura
+    const primerResultado = resultadosConsulta[0];
+    
+    primerResultado.biologicos.forEach(apartado => {
+        const variables = [];
+        
+        // Recolectar todas las variables de este apartado (de todos los grupos)
+        apartado.grupos.forEach(grupo => {
+            grupo.variables.forEach(variable => {
+                variables.push(variable.variable);
+            });
+        });
+        
+        estructura.push({
+            nombre: apartado.apartado,
+            variables: variables
+        });
+    });
+    
+    return estructura;
+}
+
+// ===============================
+// Nueva función: exportar con encabezados combinados
+// ===============================
 async function exportarTablaHTML() {
     try {
         mostrarSpinner();
 
-        // Crear un nuevo libro de trabajo
+        // 1. Crear libro y hoja
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Resultados');
 
-        // 1. Obtener encabezados de la tabla HTML
-        const tabla = document.getElementById('tablaResultados');
-        const encabezadosFijos = [];
-        const encabezadosVariables = [];
-
-        // Procesar la primera fila de encabezados (que usa rowspan)
-        const filaPrincipal = tabla.querySelector('#tablaHeader');
-        if (filaPrincipal) {
-            const celdas = filaPrincipal.querySelectorAll('th');
-            celdas.forEach(celda => {
-                const texto = celda.innerText.trim();
-                const colspan = parseInt(celda.getAttribute('colspan')) || 1;
-                // Si tiene colspan, son variables agrupadas por apartado
-                if (colspan > 1) {
-                    for (let i = 0; i < colspan; i++) {
-                        // Marcador temporal, será reemplazado
-                        encabezadosVariables.push(`VAR_${encabezadosVariables.length}`);
-                    }
-                } else if (texto) {
-                    // Son encabezados fijos (CLUES, Unidad, etc.)
-                    encabezadosFijos.push(texto);
-                }
-            });
+        // 2. Obtener la estructura de apartados y variables desde resultadosConsulta
+        const estructura = construirEstructuraEncabezados();
+        
+        // 3. Crear fila 1: Apartados (con celdas combinadas)
+        const filaApartados = [];
+        const filaVariables = [];
+        
+        // Columnas fijas (A-F) - agregar a ambas filas pero las combinaremos
+        filaApartados.push('CLUES', 'Unidad', 'Entidad', 'Jurisdicción', 'Municipio', 'Institución');
+        filaVariables.push('CLUES', 'Unidad', 'Entidad', 'Jurisdicción', 'Municipio', 'Institución');
+        
+        // Variables dinámicas por apartado
+        estructura.forEach(apartado => {
+            // Agregar apartado a fila 1 (vacío repetido para cada variable)
+            for (let i = 0; i < apartado.variables.length; i++) {
+                filaApartados.push(apartado.nombre);
+                filaVariables.push(apartado.variables[i]);
+            }
+        });
+        
+        // 4. Agregar filas al Excel
+        worksheet.addRow(filaApartados);  // Fila 1: Apartados
+        worksheet.addRow(filaVariables);  // Fila 2: Variables
+        
+        // 5. COMBINAR CELDAS VERTICALMENTE PARA COLUMNAS A-F
+        for (let col = 1; col <= 6; col++) {
+            worksheet.mergeCells(1, col, 2, col);
         }
-
-        // 2. Reemplazar marcadores con nombres reales de variables
-        const filaVariables = tabla.querySelector('#variablesHeader');
-        if (filaVariables && encabezadosVariables.length > 0) {
-            const vars = filaVariables.querySelectorAll('th');
-            vars.forEach((v, index) => {
-                if (index < encabezadosVariables.length) {
-                    encabezadosVariables[index] = v.innerText.trim();
-                }
-            });
-        }
-
-        // 3. Combinar todos los encabezados
-        const todosEncabezados = [...encabezadosFijos, ...encabezadosVariables];
-
-        // 4. Agregar fila de encabezados a la hoja de Excel
-        worksheet.addRow(todosEncabezados);
-
-        // 5. Aplicar formato básico a los encabezados
-        const headerRow = worksheet.getRow(1);
-        headerRow.font = { bold: true, size: 12 };
-        headerRow.fill = {
+        
+        // 6. Combinar celdas de apartados en fila 1 (a partir de columna G)
+        let colInicio = 7; // Columna G = 7 (después de las 6 fijas)
+        
+        estructura.forEach(apartado => {
+            const numVariables = apartado.variables.length;
+            if (numVariables > 1) {
+                worksheet.mergeCells(1, colInicio, 1, colInicio + numVariables - 1);
+            }
+            colInicio += numVariables;
+        });
+        
+        // 7. Aplicar formato a encabezados
+        // Fila 1 (Apartados) - incluyendo columnas A-F que ahora están combinadas
+        const row1 = worksheet.getRow(1);
+        row1.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+        row1.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' }
+            fgColor: { argb: 'FF2E75B6' } // Azul
         };
-        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-
-        // 6. Obtener datos del cuerpo de la tabla
-        const filasDatos = tabla.querySelectorAll('#tablaResultadosBody tr');
-        filasDatos.forEach(filaHTML => {
-            const celdas = filaHTML.querySelectorAll('td');
-            const datosFila = Array.from(celdas).map(celda => celda.innerText.trim());
-            worksheet.addRow(datosFila);
+        row1.alignment = { vertical: 'middle', horizontal: 'center' };
+        row1.height = 25;
+        
+        // Fila 2 (Variables) - solo para columnas G en adelante
+        const row2 = worksheet.getRow(2);
+        row2.font = { bold: true, size: 11 };
+        row2.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFDDEBF7' } // Azul claro
+        };
+        row2.alignment = { vertical: 'middle', horizontal: 'center' };
+        row2.height = 20;
+        
+        // 8. Agregar datos de cada CLUES
+        let fila = 3; // Comenzar en fila 3
+        
+        resultadosConsulta.forEach(r => {
+            const filaDatos = [];
+            
+            // Información básica (columnas A-F)
+            filaDatos.push(
+                r.clues,
+                r.unidad.nombre || '',
+                r.unidad.entidad || '',
+                r.unidad.jurisdiccion || '',
+                r.unidad.municipio || '',
+                obtenerInicialesInstitucion(r.unidad.idinstitucion) || ''
+            );
+            
+            // Variables por apartado (columnas G en adelante)
+            estructura.forEach(apartado => {
+                // Buscar los datos de este apartado para esta CLUES
+                const datosApartado = r.biologicos.find(b => b.apartado === apartado.nombre);
+                
+                if (datosApartado) {
+                    // Para cada variable en la estructura, buscar su valor
+                    apartado.variables.forEach(variableNombre => {
+                        let valor = 0;
+                        
+                        // Buscar en todos los grupos
+                        for (const grupo of datosApartado.grupos) {
+                            const variable = grupo.variables.find(v => v.variable === variableNombre);
+                            if (variable) {
+                                valor = variable.total;
+                                break;
+                            }
+                        }
+                        
+                        filaDatos.push(valor);
+                    });
+                } else {
+                    // Si no hay datos para este apartado, llenar con ceros
+                    apartado.variables.forEach(() => {
+                        filaDatos.push(0);
+                    });
+                }
+            });
+            
+            worksheet.addRow(filaDatos);
+            fila++;
         });
-
-        // 7. Ajustar el ancho de las columnas automáticamente
-        worksheet.columns = todosEncabezados.map(() => ({
-            width: 15 // Ancho uniforme, puedes ajustarlo
-        }));
-
-        // 8. Descargar el archivo
+        
+        // 9. Ajustar ancho de columnas automáticamente
+        worksheet.columns = filaVariables.map((header, index) => {
+            // Columnas fijas más anchas (A-F)
+            if (index < 6) {
+                return { width: 20 };
+            }
+            // Variables más estrechas (G en adelante)
+            return { width: 15 };
+        });
+        
+        // 10. Congelar las primeras 2 filas (encabezados)
+        worksheet.views = [
+            { state: 'frozen', ySplit: 2 }
+        ];
+        
+        // 11. Agregar bordes a todas las celdas de encabezados
+        [1, 2].forEach(rowNum => {
+            const row = worksheet.getRow(rowNum);
+            // Solo bordes para columnas con contenido (el resto ya tiene bordes por defecto)
+            row.eachCell((cell, colNumber) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+        });
+        
+        // 12. Descargar archivo
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         });
-
+        
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `Resultados_Consulta_${new Date().toISOString().slice(0,10)}.xlsx`;
+        link.download = `Resultados_Vacunacion_${new Date().toISOString().slice(0,10)}.xlsx`;
         link.click();
         URL.revokeObjectURL(link.href);
-
+        
         ocultarSpinner();
-
+        
     } catch (error) {
-        console.error('Error al exportar tabla HTML a Excel:', error);
-        alert('Hubo un problema al generar el archivo Excel simple.');
+        console.error('Error al exportar con encabezados combinados:', error);
+        alert('Hubo un problema al generar el archivo Excel.');
         ocultarSpinner();
     }
 }
