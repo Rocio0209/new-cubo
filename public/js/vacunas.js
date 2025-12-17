@@ -700,7 +700,7 @@ async function exportarTablaHTML() {
         // Formato para columnas A-F (todas combinadas)
         for (let col = 1; col <= 6; col++) {
             const cell = worksheet.getCell(1, col);
-            cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+            cell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
@@ -725,7 +725,7 @@ async function exportarTablaHTML() {
             
             // Apartado (combinado en filas 1-2)
             const cellApartado = worksheet.getCell(1, colInicio);
-            cellApartado.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
+            cellApartado.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
             cellApartado.fill = {
                 type: 'pattern',
                 pattern: 'solid',
