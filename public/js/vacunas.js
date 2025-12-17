@@ -738,7 +738,7 @@ async function exportarTablaHTML() {
                 bottom: { style: 'thin' },
                 right: { style: 'thin' }
             };
-            
+            // comentario
             // Formato para variables (combinadas en filas 3-4)
             for (let i = 0; i < numVariables; i++) {
                 const cellVariable = worksheet.getCell(3, colInicio + i);
