@@ -731,7 +731,7 @@ async function exportarTablaHTML() {
                 pattern: 'solid',
                 fgColor: { argb: color }
             };
-            cellApartado.alignment = { vertical: 'middle', horizontal: 'center' };
+            cellApartado.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
             cellApartado.border = {
                 top: { style: 'thin' },
                 left: { style: 'thin' },
@@ -748,7 +748,7 @@ async function exportarTablaHTML() {
                     pattern: 'solid',
                     fgColor: { argb: color.replace('FF', 'CC') } // Color más claro
                 };
-                cellVariable.alignment = { vertical: 'middle', horizontal: 'center' };
+                cellVariable.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
                 cellVariable.border = {
                     top: { style: 'thin' },
                     left: { style: 'thin' },
@@ -776,10 +776,10 @@ async function exportarTablaHTML() {
         }
         
         // 12. Ajustar altura de filas
-        worksheet.getRow(1).height = 20;
-        worksheet.getRow(2).height = 20;
-        worksheet.getRow(3).height = 20;
-        worksheet.getRow(4).height = 20;
+        worksheet.getRow(1).height = 32;
+        worksheet.getRow(2).height = 32;
+        worksheet.getRow(3).height = 70;
+        worksheet.getRow(4).height = 70;
         
         // 13. Agregar datos de cada CLUES (comenzando en fila 5)
         let fila = 5;
