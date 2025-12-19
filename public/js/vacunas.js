@@ -799,79 +799,83 @@ async function exportarTablaHTML() {
         worksheet.getRow(4).height = 70;
         
         // 13. Agregar datos de cada CLUES (comenzando en fila 5)
-        let fila = 5;
+        // 13. Agregar datos de cada CLUES (comenzando en fila 5)
+let fila = 5;
+
+resultadosConsulta.forEach(r => {
+    const filaDatos = [];
+    
+    // Información básica (columnas A-F)
+    filaDatos.push(
+        r.clues,
+        r.unidad.nombre || '',
+        r.unidad.entidad || '',
+        r.unidad.jurisdiccion || '',
+        r.unidad.municipio || '',
+        obtenerInicialesInstitucion(r.unidad.idinstitucion) || ''
+    );
+    
+    // Variables por apartado (columnas G en adelante)
+    estructura.forEach(apartado => {
+        // Buscar los datos de este apartado para esta CLUES
+        const datosApartado = r.biologicos.find(b => b.apartado === apartado.nombre);
         
-        resultadosConsulta.forEach(r => {
-            const filaDatos = [];
-            
-            // Información básica (columnas A-F)
-            filaDatos.push(
-                r.clues,
-                r.unidad.nombre || '',
-                r.unidad.entidad || '',
-                r.unidad.jurisdiccion || '',
-                r.unidad.municipio || '',
-                obtenerInicialesInstitucion(r.unidad.idinstitucion) || ''
-            );
-            
-            // Variables por apartado (columnas G en adelante)
-            estructura.forEach(apartado => {
-                // Buscar los datos de este apartado para esta CLUES
-                const datosApartado = r.biologicos.find(b => b.apartado === apartado.nombre);
+        if (datosApartado) {
+            // Para cada variable en la estructura, buscar su valor
+            apartado.variables.forEach(variableNombre => {
+                let valor = 0;
                 
-                if (datosApartado) {
-                    // Para cada variable en la estructura, buscar su valor
-                    apartado.variables.forEach(variableNombre => {
-                        let valor = 0;
-                        
-                        // Buscar en todos los grupos
-                        for (const grupo of datosApartado.grupos) {
-                            const variable = grupo.variables.find(v => v.variable === variableNombre);
-                            if (variable) {
-                                valor = variable.total;
-                                break;
-                            }
-                        }
-                        
-                        filaDatos.push(valor);
-                    });
-                } else {
-                    // Si no hay datos para este apartado, llenar con ceros
-                    apartado.variables.forEach(() => {
-                        filaDatos.push(0);
-                    });
+                // Buscar en todos los grupos
+                for (const grupo of datosApartado.grupos) {
+                    const variable = grupo.variables.find(v => v.variable === variableNombre);
+                    if (variable) {
+                        valor = variable.total;
+                        break;
+                    }
                 }
-            });
-            
-            worksheet.addRow(filaDatos);
-            
-            // Aplicar bordes a esta fila de datos
-            const row = worksheet.getRow(fila);
-            row.eachCell((cell, colNumber) => {
-                cell.border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
                 
-                // Alinear números a la derecha para columnas de datos (G en adelante)
-                if (colNumber > 6 && typeof cell.value === 'number') {
-                    cell.alignment = { horizontal: 'right' };
-                }
+                filaDatos.push(valor);
             });
-            
-            fila++;
-        });
+        } else {
+            // Si no hay datos para este apartado, llenar con ceros
+            apartado.variables.forEach(() => {
+                filaDatos.push(0);
+            });
+        }
+    });
+    
+    worksheet.addRow(filaDatos);
+    
+    // Aplicar bordes a esta fila de datos
+    const row = worksheet.getRow(fila);
+    row.eachCell((cell, colNumber) => {
+        cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
         
-        // 14. Ajustar ancho de columnas
-        // Columnas A-F
-        worksheet.getColumn(1).width = 15; // CLUES
-        worksheet.getColumn(2).width = 20; // Unidad
-        worksheet.getColumn(3).width = 15; // Entidad
-        worksheet.getColumn(4).width = 15; // Jurisdicción
-        worksheet.getColumn(5).width = 15; // Municipio
-        worksheet.getColumn(6).width = 15; // Institución
+        // Alinear números a la derecha para columnas de datos (G en adelante)
+        if (colNumber > 6 && typeof cell.value === 'number') {
+            cell.alignment = { horizontal: 'right' };
+        }
+    });
+    
+    fila++;
+});
+
+// 🔴 🔴 🔴 AGREGAR ESTA LÍNEA AQUÍ 🔴 🔴 🔴
+// 14. AGREGAR COLUMNAS FIJAS CON FÓRMULAS
+agregarColumnasFijasConFormulas(worksheet, estructura, 5);
+
+// 15. Ajustar ancho de columnas (las originales)
+worksheet.getColumn(1).width = 15; // CLUES
+worksheet.getColumn(2).width = 20; // Unidad
+worksheet.getColumn(3).width = 15; // Entidad
+worksheet.getColumn(4).width = 15; // Jurisdicción
+worksheet.getColumn(5).width = 15; // Municipio
+worksheet.getColumn(6).width = 15; // Institución
         
         // Columnas de variables
         let currentCol = 7;
@@ -908,39 +912,288 @@ async function exportarTablaHTML() {
         ocultarSpinner();
     }
 }
-// ===============================
-// Función auxiliar: construir estructura de encabezados
-// ===============================
-function construirEstructuraEncabezados() {
-    const estructura = [];
-    
-    if (resultadosConsulta.length === 0) {
-        console.warn('No hay resultados para construir encabezados');
-        return estructura;
-    }
-    
-    // Tomar el primer resultado como referencia para la estructura
-    const primerResultado = resultadosConsulta[0];
-    
-    primerResultado.biologicos.forEach(apartado => {
-        const variables = [];
-        
-        // Recolectar todas las variables de este apartado (de todos los grupos)
-        apartado.grupos.forEach(grupo => {
-            grupo.variables.forEach(variable => {
-                variables.push(variable.variable);
-            });
-        });
-        
-        estructura.push({
-            nombre: apartado.apartado,
-            variables: variables
-        });
-    });
-    
-    return estructura;
-}
 
+// ===============================
+// Nueva función: agregarColumnasFijasConFormulas - VERSIÓN CORREGIDA COMPLETA
+// ===============================
+function agregarColumnasFijasConFormulas(worksheet, estructura, filaInicioDatos = 5) {
+    try {
+        console.log("🔧 Iniciando agregarColumnasFijasConFormulas...");
+        
+        // 1. Columnas fijas a agregar
+        const columnasFijas = [
+            { 
+                nombre: "POBLACIÓN <1 AÑO", 
+                ancho: 12,
+                formula: "",
+                esGrupo: false
+            },
+            { 
+                nombre: "POBLACIÓN 1 AÑO", 
+                ancho: 12,
+                formula: "",
+                esGrupo: false
+            },
+            { 
+                nombre: "POBLACIÓN 4 AÑO", 
+                ancho: 12,
+                formula: "",
+                esGrupo: false
+            },
+            { 
+                nombre: "POBLACIÓN 6 AÑO", 
+                ancho: 12,
+                formula: "",
+                esGrupo: false
+            },
+            { 
+                nombre: "COBERTURA PVU", 
+                esGrupo: true,
+                subgrupos: [
+                    {
+                        nombre: "ESQUEMAS POR BIOLÓGICO PARA MENORES DE 1 AÑO",
+                        variables: [
+                            { nombre: "% BCG", formula: "", ancho: 8 },
+                            { nombre: "%HEPATITIS B 1a", formula: "", ancho: 10 },
+                            { nombre: "% HEXAVALENTE ACELULAR 3a", formula: "", ancho: 12 },
+                            { nombre: "% HEPATITIS B  1a  +  HEXAVALENTE ACELULAR 3a", formula: "", ancho: 15 },
+                            { nombre: "% ROTAVIRUS RV1 2a", formula: "", ancho: 12 },
+                            { nombre: "% ROTAVIRUS  RV5 3a", formula: "", ancho: 12 },
+                            { nombre: "%ROTAVIRUS RV1 2a + RV5 3a", formula: "", ancho: 15 },
+                            { nombre: "% NEUMOCÓCICA CONJUGADA (13 VALENTE) 2a", formula: "", ancho: 18 },
+                            { nombre: "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS <1 AÑO", formula: "", ancho: 20 },
+                            { nombre: "PROMEDIO ESQUEMA COMPLETO COBERTURAS EN <1 AÑO", formula: "", ancho: 18 }
+                        ]
+                    },
+                    {
+                        nombre: "ESQUEMAS COMPLETOS POR BIOLÓGICO EN 1 AÑO",
+                        variables: [
+                            { nombre: "% HEXAVALENTE 4a", formula: "", ancho: 12 },
+                            { nombre: "% NEUMOCÓCICA 3a", formula: "", ancho: 12 },
+                            { nombre: "% SRP 1ra", formula: "", ancho: 8 },
+                            { nombre: "% SRP 18 Meses", formula: "", ancho: 10 },
+                            { nombre: "% SRP 2da", formula: "", ancho: 8 },
+                            { nombre: "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS 1 AÑO", formula: "", ancho: 20 },
+                            { nombre: "% PROMEDIO ESQUEMA COMPLETO EN 1 AÑO", formula: "", ancho: 18 }
+                        ]
+                    }
+                ]
+            },
+            { 
+                nombre: "% ESQUEMA COMPLETO DE DPT EN 4 AÑOS", 
+                ancho: 18,
+                formula: "",
+                esGrupo: false
+            },
+            { 
+                nombre: "% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS", 
+                ancho: 18,
+                formula: "",
+                esGrupo: false
+            }
+        ];
+        
+        // 2. Calcular la columna donde empiezan las nuevas columnas
+        let totalColumnasDinamicas = 0;
+        estructura.forEach(apartado => {
+            totalColumnasDinamicas += apartado.variables.length;
+        });
+        
+        const columnaInicioFijas = 7 + totalColumnasDinamicas; // Columna después de las dinámicas
+        console.log(`🔧 Columnas dinámicas: ${totalColumnasDinamicas}, Inicio columnas fijas: columna ${columnaInicioFijas}`);
+        
+        // 3. Variable para llevar el conteo de columnas actual
+        let columnaActual = columnaInicioFijas;
+        
+        // 4. Agregar encabezados de columnas fijas - ESTA ES LA PARTE CRÍTICA
+        columnasFijas.forEach((columna, colIndex) => {
+            console.log(`🔧 Procesando columna fija ${colIndex + 1}: "${columna.nombre}" en columna ${columnaActual}`);
+            
+            if (columna.esGrupo) {
+                // Para grupos como "COBERTURA PVU"
+                let variablesTotalesEnGrupo = 0;
+                
+                // Primero contar total de variables en todos los subgrupos
+                columna.subgrupos.forEach(subgrupo => {
+                    variablesTotalesEnGrupo += subgrupo.variables.length;
+                });
+                
+                console.log(`🔧 Grupo "${columna.nombre}" tiene ${variablesTotalesEnGrupo} variables totales`);
+                
+                // Agregar nombre del grupo en fila 1 (solo en primera columna del grupo)
+                worksheet.getRow(1).getCell(columnaActual).value = columna.nombre;
+                
+                // Procesar cada subgrupo
+                columna.subgrupos.forEach((subgrupo, subgrupoIndex) => {
+                    console.log(`🔧   Subgrupo "${subgrupo.nombre}" con ${subgrupo.variables.length} variables`);
+                    
+                    // Agregar nombre del subgrupo en fila 2
+                    worksheet.getRow(2).getCell(columnaActual).value = subgrupo.nombre;
+                    
+                    // Agregar cada variable en filas 3 y 4
+                    subgrupo.variables.forEach((variable, varIndex) => {
+                        const columnaVar = columnaActual + varIndex;
+                        worksheet.getRow(3).getCell(columnaVar).value = variable.nombre;
+                        worksheet.getRow(4).getCell(columnaVar).value = variable.nombre;
+                        console.log(`🔧     Variable "${variable.nombre}" en columna ${columnaVar}`);
+                    });
+                    
+                    // Avanzar columnaActual para el próximo subgrupo o columna
+                    // NOTA: Aquí está el error anterior - no estábamos avanzando columnaActual
+                    // columnaActual se actualiza después de procesar todas las variables
+                });
+                
+                // Después de procesar todo el grupo, avanzar columnaActual
+                columnaActual += variablesTotalesEnGrupo;
+                
+            } else {
+                // Para columnas simples
+                console.log(`🔧 Columna simple "${columna.nombre}" en columna ${columnaActual}`);
+                
+                // Agregar en filas 1 y 2 (se combinarán verticalmente)
+                worksheet.getRow(1).getCell(columnaActual).value = columna.nombre;
+                worksheet.getRow(2).getCell(columnaActual).value = columna.nombre;
+                
+                // Filas 3 y 4 vacías para columnas simples
+                worksheet.getRow(3).getCell(columnaActual).value = "";
+                worksheet.getRow(4).getCell(columnaActual).value = "";
+                
+                // Avanzar a siguiente columna
+                columnaActual++;
+            }
+        });
+        
+        console.log(`🔧 Total columnas fijas procesadas. Columna actual después: ${columnaActual}`);
+        
+        // 5. Combinar celdas - AHORA CON LAS COLUMNAS CORRECTAS
+        columnaActual = columnaInicioFijas;
+        
+        columnasFijas.forEach(columna => {
+            if (columna.esGrupo) {
+                // Para grupos: contar total de variables
+                let totalVariablesEnGrupo = 0;
+                columna.subgrupos.forEach(subgrupo => {
+                    totalVariablesEnGrupo += subgrupo.variables.length;
+                });
+                
+                console.log(`🔧 Combinando grupo "${columna.nombre}" (${totalVariablesEnGrupo} variables) desde columna ${columnaActual}`);
+                
+                if (totalVariablesEnGrupo > 1) {
+                    // Combinar grupo en filas 1-2
+                    worksheet.mergeCells(1, columnaActual, 2, columnaActual + totalVariablesEnGrupo - 1);
+                    console.log(`🔧   Combinado filas 1-2: ${columnaActual} a ${columnaActual + totalVariablesEnGrupo - 1}`);
+                }
+                
+                // Para cada subgrupo
+                columna.subgrupos.forEach(subgrupo => {
+                    const numVariables = subgrupo.variables.length;
+                    
+                    if (numVariables > 1) {
+                        // Combinar subgrupo en filas 3-4
+                        worksheet.mergeCells(3, columnaActual, 3, columnaActual + numVariables - 1);
+                        worksheet.mergeCells(4, columnaActual, 4, columnaActual + numVariables - 1);
+                        console.log(`🔧   Combinado subgrupo "${subgrupo.nombre}" (${numVariables} vars): columnas ${columnaActual} a ${columnaActual + numVariables - 1}`);
+                    }
+                    
+                    columnaActual += numVariables;
+                });
+            } else {
+                // Para columnas simples: combinar verticalmente 4 filas
+                worksheet.mergeCells(1, columnaActual, 4, columnaActual);
+                console.log(`🔧 Combinando columna simple "${columna.nombre}" verticalmente: columna ${columnaActual}`);
+                columnaActual++;
+            }
+        });
+        
+        // 6. Aplicar formato
+        const colorColumnasFijas = 'FF7030A0'; // Morado
+        
+        // Resetear columnaActual para aplicar formato
+        columnaActual = columnaInicioFijas;
+        
+        columnasFijas.forEach(columna => {
+            if (columna.esGrupo) {
+                columna.subgrupos.forEach(subgrupo => {
+                    subgrupo.variables.forEach((variable, varIndex) => {
+                        const columnaReal = columnaActual + varIndex;
+                        
+                        // Formato para filas 3 y 4 (variables)
+                        const cellFila3 = worksheet.getRow(3).getCell(columnaReal);
+                        const cellFila4 = worksheet.getRow(4).getCell(columnaReal);
+                        
+                        cellFila3.font = { bold: true, size: 8 };
+                        cellFila3.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: colorColumnasFijas.replace('FF', 'CC') }
+                        };
+                        cellFila3.alignment = { 
+                            vertical: 'middle', 
+                            horizontal: 'center', 
+                            wrapText: true
+                        };
+                        
+                        cellFila4.font = { bold: true, size: 8 };
+                        cellFila4.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: colorColumnasFijas.replace('FF', 'CC') }
+                        };
+                        cellFila4.alignment = { 
+                            vertical: 'middle', 
+                            horizontal: 'center', 
+                            wrapText: true
+                        };
+                    });
+                    
+                    // Avanzar columnaActual después de procesar todas las variables del subgrupo
+                    columnaActual += subgrupo.variables.length;
+                });
+            } else {
+                // Formato para columnas simples
+                const cell = worksheet.getRow(1).getCell(columnaActual);
+                cell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: colorColumnasFijas }
+                };
+                cell.alignment = { 
+                    vertical: 'middle', 
+                    horizontal: 'center', 
+                    wrapText: true
+                };
+                columnaActual++;
+            }
+        });
+        
+        // 7. Ajustar anchos de columnas
+        columnaActual = columnaInicioFijas;
+        
+        columnasFijas.forEach(columna => {
+            if (columna.esGrupo) {
+                columna.subgrupos.forEach(subgrupo => {
+                    subgrupo.variables.forEach(variable => {
+                        worksheet.getColumn(columnaActual).width = variable.ancho || 12;
+                        console.log(`🔧 Ancho columna ${columnaActual}: ${variable.ancho || 12} (${variable.nombre})`);
+                        columnaActual++;
+                    });
+                });
+            } else {
+                worksheet.getColumn(columnaActual).width = columna.ancho || 12;
+                console.log(`🔧 Ancho columna ${columnaActual}: ${columna.ancho || 12} (${columna.nombre})`);
+                columnaActual++;
+            }
+        });
+        
+        console.log(`✅ Columnas fijas agregadas correctamente. Total columnas: ${columnaActual - columnaInicioFijas}`);
+        return columnaInicioFijas;
+        
+    } catch (error) {
+        console.error("❌ Error crítico en agregarColumnasFijasConFormulas:", error);
+        throw error;
+    }
+}
 resultadosContainer.classList.remove("d-none");
 btnExportar.disabled = false;
 // 🔹 Habilitar también el nuevo botón
