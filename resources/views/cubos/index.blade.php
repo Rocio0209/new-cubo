@@ -47,7 +47,7 @@
         <div class="mb-3">
             <button id="btnConsultar" class="btn btn-primary" disabled>Consultar Biológicos</button>
             <button id="btnExportar" class="btn btn-success ms-2" disabled>Exportar Plantilla de Excel</button>
-            <button id="btnExportarSimple" class="btn btn-outline-success ms-2" disabled>Descargar Resultados</button>
+            <button id="btnExportarSimple" class="btn btn-outline-success ms-2">Descargar Resultados</button>
         </div>
 
         {{-- Spinner --}}

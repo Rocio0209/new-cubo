@@ -1,4 +1,5 @@
 const API_LARAVEL = "/consultar-biologicos";
+// const API_FASTAPI = "http://0.0.0.0:8080";
 const API_FASTAPI = "http://127.0.0.1:8080";
 console.log("🔵 vacanas.js cargado correctamente");
 
@@ -23,6 +24,9 @@ function ocultarSpinner() {
     spinnerCarga.classList.add("d-none");
 }
 
+// ===============================
+// MODIFICAR la función resetearInterfaz() - ELIMINAR la línea que deshabilita btnExportarSimple
+// ===============================
 function resetearInterfaz() {
     // Limpiar tabla de resultados
     const tablaHeader = document.getElementById('tablaHeader');
@@ -34,6 +38,7 @@ function resetearInterfaz() {
     const mensajeCluesCargadas = document.getElementById('mensajeCluesCargadas');
     const btnConsultar = document.getElementById('btnConsultar');
     const btnExportar = document.getElementById('btnExportar');
+    const btnExportarSimple = document.getElementById('btnExportarSimple'); 
     
     // Limpiar contenido de la tabla
     tablaHeader.innerHTML = "";
@@ -48,6 +53,8 @@ function resetearInterfaz() {
     // Deshabilitar botones (excepto consultar si hay CLUES disponibles)
     btnConsultar.disabled = cluesDisponibles.length === 0;
     btnExportar.disabled = true;
+    // NO deshabilitar btnExportarSimple - comentar o eliminar esta línea
+    // btnExportarSimple.disabled = true; ← COMENTA O ELIMINA ESTA LÍNEA
     
     // Limpiar variables
     resultadosConsulta = [];
@@ -189,6 +196,7 @@ document.getElementById('btnLimpiarClues').addEventListener('click', function() 
     // 3. Deshabilitar botones de consulta/exportación
     btnConsultar.disabled = false; // Mantener habilitado porque hay CLUES disponibles
     btnExportar.disabled = true;
+    // btnExportarSimple.disabled = false;
     
     // 4. Limpiar variable de resultados
     resultadosConsulta = [];
@@ -259,6 +267,7 @@ function cargarClues() {
 // ===============================
 // Consultar Biológicos
 // ===============================
+
 function consultarBiologicos() {
     const catalogo = catalogoSelect.value;
     const clues_list = Array.from(cluesSelect.selectedOptions)
@@ -268,6 +277,11 @@ function consultarBiologicos() {
 
     mostrarSpinner();
 
+
+    // IPCONFIG
+    // fetch("http://0.0.0.0:8000"+ API_LARAVEL, {
+
+    // LOCALHOST
     fetch(API_LARAVEL, {
         method: "POST",
         headers: {
@@ -301,6 +315,9 @@ function consultarBiologicos() {
 
             resultadosContainer.classList.remove("d-none");
             btnExportar.disabled = false;
+            
+            // 🔹 NO es necesario habilitar aquí porque ya está siempre habilitado
+            // btnExportarSimple.disabled = false; ← COMENTA O ELIMINA ESTA LÍNEA
         })
         .finally(ocultarSpinner);
 }
@@ -725,7 +742,7 @@ async function exportarTablaHTML() {
             
             // Apartado (combinado en filas 1-2)
             const cellApartado = worksheet.getCell(1, colInicio);
-            cellApartado.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+            cellApartado.font = { bold: true, size: 12 };
             cellApartado.fill = {
                 type: 'pattern',
                 pattern: 'solid',
@@ -927,10 +944,10 @@ function construirEstructuraEncabezados() {
 resultadosContainer.classList.remove("d-none");
 btnExportar.disabled = false;
 // 🔹 Habilitar también el nuevo botón
-btnExportarSimple.disabled = false;
+// btnExportarSimple.disabled = false;
 
-// En la función resetearInterfaz():
-btnExportarSimple.disabled = true;
+// // En la función resetearInterfaz():
+// btnExportarSimple.disabled = true;
 
-// En el event listener de btnLimpiarClues:
-btnExportarSimple.disabled = true;
+// // En el event listener de btnLimpiarClues:
+// btnExportarSimple.disabled = true;
