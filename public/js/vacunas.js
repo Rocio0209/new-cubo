@@ -913,83 +913,88 @@ worksheet.getColumn(6).width = 15; // Institución
     }
 }
 
+
 // ===============================
-// Nueva función: agregarColumnasFijasConFormulas - VERSIÓN CORREGIDA COMPLETA
+// Nueva función: agregarColumnasFijasConFormulas - VERSIÓN SIN SUBTÍTULO PARA DPT Y SRP
 // ===============================
 function agregarColumnasFijasConFormulas(worksheet, estructura, filaInicioDatos = 5) {
     try {
         console.log("🔧 Iniciando agregarColumnasFijasConFormulas...");
         
-        // 1. Columnas fijas a agregar
+        // 1. Columnas fijas a agregar - ESTRUCTURA CON COLORES POR VARIABLE
         const columnasFijas = [
             { 
                 nombre: "POBLACIÓN <1 AÑO", 
-                ancho: 12,
+                ancho: 15,
                 formula: "",
-                esGrupo: false
+                esGrupo: false,
+                color: 'FF4F81BD' // Azul
             },
             { 
                 nombre: "POBLACIÓN 1 AÑO", 
-                ancho: 12,
+                ancho: 15,
                 formula: "",
-                esGrupo: false
+                esGrupo: false,
+                color: 'FF9BBB59' // Verde
             },
             { 
                 nombre: "POBLACIÓN 4 AÑO", 
-                ancho: 12,
+                ancho: 15,
                 formula: "",
-                esGrupo: false
+                esGrupo: false,
+                color: 'FFC0504D' // Rojo
             },
             { 
                 nombre: "POBLACIÓN 6 AÑO", 
-                ancho: 12,
+                ancho: 15,
                 formula: "",
-                esGrupo: false
+                esGrupo: false,
+                color: 'FFF79646' // Naranja
             },
             { 
                 nombre: "COBERTURA PVU", 
                 esGrupo: true,
+                color: 'FF7030A0', // Morado (para el grupo principal)
                 subgrupos: [
                     {
                         nombre: "ESQUEMAS POR BIOLÓGICO PARA MENORES DE 1 AÑO",
+                        color: 'FF4BACC6',
                         variables: [
-                            { nombre: "% BCG", formula: "", ancho: 8 },
-                            { nombre: "%HEPATITIS B 1a", formula: "", ancho: 10 },
-                            { nombre: "% HEXAVALENTE ACELULAR 3a", formula: "", ancho: 12 },
-                            { nombre: "% HEPATITIS B  1a  +  HEXAVALENTE ACELULAR 3a", formula: "", ancho: 15 },
-                            { nombre: "% ROTAVIRUS RV1 2a", formula: "", ancho: 12 },
-                            { nombre: "% ROTAVIRUS  RV5 3a", formula: "", ancho: 12 },
-                            { nombre: "%ROTAVIRUS RV1 2a + RV5 3a", formula: "", ancho: 15 },
-                            { nombre: "% NEUMOCÓCICA CONJUGADA (13 VALENTE) 2a", formula: "", ancho: 18 },
-                            { nombre: "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS <1 AÑO", formula: "", ancho: 20 },
-                            { nombre: "PROMEDIO ESQUEMA COMPLETO COBERTURAS EN <1 AÑO", formula: "", ancho: 18 }
+                            { nombre: "% BCG", formula: "", ancho: 10, color: 'FF4F81BD' }, // Azul
+                            { nombre: "%HEPATITIS B 1a", formula: "", ancho: 12, color: 'FF9BBB59' }, // Verde
+                            { nombre: "% HEXAVALENTE ACELULAR 3a", formula: "", ancho: 15, color: 'FFC0504D' }, // Rojo
+                            { nombre: "% HEPATITIS B  1a  +  HEXAVALENTE ACELULAR 3a", formula: "", ancho: 20, color: 'FFF79646' }, // Naranja
+                            { nombre: "% ROTAVIRUS RV1 2a", formula: "", ancho: 15, color: 'FF8064A2' }, // Morado claro
+                            { nombre: "% ROTAVIRUS  RV5 3a", formula: "", ancho: 15, color: 'FF4BACC6' }, // Azul claro
+                            { nombre: "%ROTAVIRUS RV1 2a + RV5 3a", formula: "", ancho: 18, color: 'FF4F81BD' }, // Azul
+                            { nombre: "% NEUMOCÓCICA CONJUGADA (13 VALENTE) 2a", formula: "", ancho: 22, color: 'FF9BBB59' }, // Verde
+                            { nombre: "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS <1 AÑO", formula: "", ancho: 25, color: 'FFC0504D' }, // Rojo
+                            { nombre: "PROMEDIO ESQUEMA COMPLETO COBERTURAS EN <1 AÑO", formula: "", ancho: 20, color: 'FFF79646' } // Naranja
                         ]
                     },
                     {
                         nombre: "ESQUEMAS COMPLETOS POR BIOLÓGICO EN 1 AÑO",
+                        color: 'FF95B3D7',
                         variables: [
-                            { nombre: "% HEXAVALENTE 4a", formula: "", ancho: 12 },
-                            { nombre: "% NEUMOCÓCICA 3a", formula: "", ancho: 12 },
-                            { nombre: "% SRP 1ra", formula: "", ancho: 8 },
-                            { nombre: "% SRP 18 Meses", formula: "", ancho: 10 },
-                            { nombre: "% SRP 2da", formula: "", ancho: 8 },
-                            { nombre: "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS 1 AÑO", formula: "", ancho: 20 },
-                            { nombre: "% PROMEDIO ESQUEMA COMPLETO EN 1 AÑO", formula: "", ancho: 18 }
+                            { nombre: "% HEXAVALENTE 4a", formula: "", ancho: 15, color: 'FF4F81BD' }, // Azul
+                            { nombre: "% NEUMOCÓCICA 3a", formula: "", ancho: 15, color: 'FF9BBB59' }, // Verde
+                            { nombre: "% SRP 1ra", formula: "", ancho: 10, color: 'FFC0504D' }, // Rojo
+                            { nombre: "% SRP 18 Meses", formula: "", ancho: 12, color: 'FFF79646' }, // Naranja
+                            { nombre: "% SRP 2da", formula: "", ancho: 10, color: 'FF8064A2' }, // Morado claro
+                            { nombre: "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS 1 AÑO", formula: "", ancho: 25, color: 'FF4BACC6' }, // Azul claro
+                            { nombre: "% PROMEDIO ESQUEMA COMPLETO EN 1 AÑO", formula: "", ancho: 20, color: 'FF4F81BD' } // Azul
+                        ]
+                    },
+                    // DPT y SRP SIN NOMBRE DE SUBGRUPO - OCUPAN FILAS 2-4
+                    {
+                        nombre: "", // Subgrupo sin nombre
+                        color: 'FFB7DEE8',
+                        variables: [
+                            { nombre: "% ESQUEMA COMPLETO DE DPT EN 4 AÑOS", formula: "", ancho: 20, color: 'FFC0504D' }, // Rojo
+                            { nombre: "% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS", formula: "", ancho: 20, color: 'FF9BBB59' } // Verde
                         ]
                     }
                 ]
-            },
-            { 
-                nombre: "% ESQUEMA COMPLETO DE DPT EN 4 AÑOS", 
-                ancho: 18,
-                formula: "",
-                esGrupo: false
-            },
-            { 
-                nombre: "% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS", 
-                ancho: 18,
-                formula: "",
-                esGrupo: false
             }
         ];
         
@@ -1005,169 +1010,489 @@ function agregarColumnasFijasConFormulas(worksheet, estructura, filaInicioDatos 
         // 3. Variable para llevar el conteo de columnas actual
         let columnaActual = columnaInicioFijas;
         
-        // 4. Agregar encabezados de columnas fijas - ESTA ES LA PARTE CRÍTICA
-        columnasFijas.forEach((columna, colIndex) => {
-            console.log(`🔧 Procesando columna fija ${colIndex + 1}: "${columna.nombre}" en columna ${columnaActual}`);
-            
+        // 4. PRIMERO: Contar total de columnas que ocuparán las columnas fijas
+        let totalColumnasFijas = 0;
+        columnasFijas.forEach(columna => {
             if (columna.esGrupo) {
-                // Para grupos como "COBERTURA PVU"
-                let variablesTotalesEnGrupo = 0;
-                
-                // Primero contar total de variables en todos los subgrupos
                 columna.subgrupos.forEach(subgrupo => {
-                    variablesTotalesEnGrupo += subgrupo.variables.length;
+                    totalColumnasFijas += subgrupo.variables.length;
+                });
+            } else {
+                totalColumnasFijas += 1;
+            }
+        });
+        console.log(`🔧 Total columnas fijas a crear: ${totalColumnasFijas}`);
+        
+        // 5. SEGUNDO: Crear estructura vacía para las 4 filas de encabezado
+        const encabezadosFilas = {
+            fila1: Array(totalColumnasFijas).fill(''),
+            fila2: Array(totalColumnasFijas).fill(''),
+            fila3: Array(totalColumnasFijas).fill(''),
+            fila4: Array(totalColumnasFijas).fill('')
+        };
+        
+        // 6. TERCERO: Llenar la estructura con los datos Y colores POR VARIABLE
+        let columnaOffset = 0;
+        
+        // Array para guardar colores de cada columna - UN COLOR POR VARIABLE
+        const coloresPorColumna = Array(totalColumnasFijas).fill('');
+        const esVariableDirecta = Array(totalColumnasFijas).fill(false); // Para saber si es variable DPT/SRP
+        
+        columnasFijas.forEach(columna => {
+            if (columna.esGrupo) {
+                // Para grupos: el nombre del grupo va en TODAS las columnas del grupo (fila 1)
+                let totalVariablesEnGrupo = 0;
+                
+                // Primero contar variables totales
+                columna.subgrupos.forEach(subgrupo => {
+                    totalVariablesEnGrupo += subgrupo.variables.length;
                 });
                 
-                console.log(`🔧 Grupo "${columna.nombre}" tiene ${variablesTotalesEnGrupo} variables totales`);
-                
-                // Agregar nombre del grupo en fila 1 (solo en primera columna del grupo)
-                worksheet.getRow(1).getCell(columnaActual).value = columna.nombre;
+                // Nombre del grupo en fila 1 (todas las columnas del grupo) - COLOR DEL GRUPO
+                for (let i = 0; i < totalVariablesEnGrupo; i++) {
+                    encabezadosFilas.fila1[columnaOffset + i] = columna.nombre;
+                    // Fila 1 usa el color del grupo principal
+                    coloresPorColumna[columnaOffset + i] = columna.color || 'FF7030A0';
+                }
                 
                 // Procesar cada subgrupo
+                let subgrupoOffset = 0;
                 columna.subgrupos.forEach((subgrupo, subgrupoIndex) => {
-                    console.log(`🔧   Subgrupo "${subgrupo.nombre}" con ${subgrupo.variables.length} variables`);
+                    // Nombre del subgrupo en fila 2 (solo si tiene nombre)
+                    if (subgrupo.nombre && subgrupo.nombre.trim() !== "") {
+                        for (let i = 0; i < subgrupo.variables.length; i++) {
+                            encabezadosFilas.fila2[columnaOffset + subgrupoOffset + i] = subgrupo.nombre;
+                        }
+                    } else {
+                        // Para subgrupos sin nombre (DPT y SRP), dejar fila 2 vacía
+                        for (let i = 0; i < subgrupo.variables.length; i++) {
+                            encabezadosFilas.fila2[columnaOffset + subgrupoOffset + i] = "";
+                            esVariableDirecta[columnaOffset + subgrupoOffset + i] = true; // Marcar como variable directa
+                        }
+                    }
                     
-                    // Agregar nombre del subgrupo en fila 2
-                    worksheet.getRow(2).getCell(columnaActual).value = subgrupo.nombre;
-                    
-                    // Agregar cada variable en filas 3 y 4
+                    // Variables en filas 3 y 4 - DISTINTO PARA SUBGRUPOS CON/SIN NOMBRE
                     subgrupo.variables.forEach((variable, varIndex) => {
-                        const columnaVar = columnaActual + varIndex;
-                        worksheet.getRow(3).getCell(columnaVar).value = variable.nombre;
-                        worksheet.getRow(4).getCell(columnaVar).value = variable.nombre;
-                        console.log(`🔧     Variable "${variable.nombre}" en columna ${columnaVar}`);
+                        if (subgrupo.nombre && subgrupo.nombre.trim() !== "") {
+                            // Subgrupos CON nombre: variables en fila 3, fila 4 vacía
+                            encabezadosFilas.fila3[columnaOffset + subgrupoOffset + varIndex] = variable.nombre;
+                            encabezadosFilas.fila4[columnaOffset + subgrupoOffset + varIndex] = "";
+                        } else {
+                            // Subgrupos SIN nombre (DPT y SRP): variables en fila 2, filas 3-4 vacías
+                            encabezadosFilas.fila2[columnaOffset + subgrupoOffset + varIndex] = variable.nombre;
+                            encabezadosFilas.fila3[columnaOffset + subgrupoOffset + varIndex] = "";
+                            encabezadosFilas.fila4[columnaOffset + subgrupoOffset + varIndex] = "";
+                        }
+                        
+                        // Guardar el color ESPECÍFICO de esta variable para las filas 2-4
+                        coloresPorColumna[columnaOffset + subgrupoOffset + varIndex] = variable.color || 'FF7030A0';
                     });
                     
-                    // Avanzar columnaActual para el próximo subgrupo o columna
-                    // NOTA: Aquí está el error anterior - no estábamos avanzando columnaActual
-                    // columnaActual se actualiza después de procesar todas las variables
+                    subgrupoOffset += subgrupo.variables.length;
                 });
                 
-                // Después de procesar todo el grupo, avanzar columnaActual
-                columnaActual += variablesTotalesEnGrupo;
+                columnaOffset += totalVariablesEnGrupo;
                 
             } else {
-                // Para columnas simples
-                console.log(`🔧 Columna simple "${columna.nombre}" en columna ${columnaActual}`);
+                // Para columnas simples: mismo valor en las 4 filas
+                encabezadosFilas.fila1[columnaOffset] = columna.nombre;
+                encabezadosFilas.fila2[columnaOffset] = "";
+                encabezadosFilas.fila3[columnaOffset] = "";
+                encabezadosFilas.fila4[columnaOffset] = "";
                 
-                // Agregar en filas 1 y 2 (se combinarán verticalmente)
-                worksheet.getRow(1).getCell(columnaActual).value = columna.nombre;
-                worksheet.getRow(2).getCell(columnaActual).value = columna.nombre;
+                // Guardar color para columnas simples (todas las filas)
+                coloresPorColumna[columnaOffset] = columna.color || 'FF7030A0';
                 
-                // Filas 3 y 4 vacías para columnas simples
-                worksheet.getRow(3).getCell(columnaActual).value = "";
-                worksheet.getRow(4).getCell(columnaActual).value = "";
-                
-                // Avanzar a siguiente columna
-                columnaActual++;
+                columnaOffset++;
             }
         });
         
-        console.log(`🔧 Total columnas fijas procesadas. Columna actual después: ${columnaActual}`);
+        // 7. CUARTO: Agregar los encabezados a las filas existentes del worksheet
+        // Obtener las filas 1-4 del worksheet
+        const fila1Excel = worksheet.getRow(1);
+        const fila2Excel = worksheet.getRow(2);
+        const fila3Excel = worksheet.getRow(3);
+        const fila4Excel = worksheet.getRow(4);
         
-        // 5. Combinar celdas - AHORA CON LAS COLUMNAS CORRECTAS
+        // Agregar los encabezados de columnas fijas
+        for (let i = 0; i < totalColumnasFijas; i++) {
+            const columnaExcel = columnaInicioFijas + i;
+            
+            fila1Excel.getCell(columnaExcel).value = encabezadosFilas.fila1[i];
+            fila2Excel.getCell(columnaExcel).value = encabezadosFilas.fila2[i];
+            fila3Excel.getCell(columnaExcel).value = encabezadosFilas.fila3[i];
+            fila4Excel.getCell(columnaExcel).value = encabezadosFilas.fila4[i];
+        }
+        
+        // 8. QUINTO: Combinar celdas - VERSIÓN ESPECIAL PARA DPT Y SRP
+        columnaOffset = 0;
         columnaActual = columnaInicioFijas;
         
         columnasFijas.forEach(columna => {
             if (columna.esGrupo) {
-                // Para grupos: contar total de variables
+                // Contar total de variables en el grupo
                 let totalVariablesEnGrupo = 0;
                 columna.subgrupos.forEach(subgrupo => {
                     totalVariablesEnGrupo += subgrupo.variables.length;
                 });
                 
-                console.log(`🔧 Combinando grupo "${columna.nombre}" (${totalVariablesEnGrupo} variables) desde columna ${columnaActual}`);
-                
+                // COMBINACIÓN PARA GRUPO "COBERTURA PVU" (fila 1)
                 if (totalVariablesEnGrupo > 1) {
-                    // Combinar grupo en filas 1-2
-                    worksheet.mergeCells(1, columnaActual, 2, columnaActual + totalVariablesEnGrupo - 1);
-                    console.log(`🔧   Combinado filas 1-2: ${columnaActual} a ${columnaActual + totalVariablesEnGrupo - 1}`);
+                    worksheet.mergeCells(1, columnaActual, 1, columnaActual + totalVariablesEnGrupo - 1);
+                    console.log(`🔧 Combinado grupo "${columna.nombre}" en fila 1: columnas ${columnaActual} a ${columnaActual + totalVariablesEnGrupo - 1}`);
                 }
                 
-                // Para cada subgrupo
-                columna.subgrupos.forEach(subgrupo => {
-                    const numVariables = subgrupo.variables.length;
-                    
-                    if (numVariables > 1) {
-                        // Combinar subgrupo en filas 3-4
-                        worksheet.mergeCells(3, columnaActual, 3, columnaActual + numVariables - 1);
-                        worksheet.mergeCells(4, columnaActual, 4, columnaActual + numVariables - 1);
-                        console.log(`🔧   Combinado subgrupo "${subgrupo.nombre}" (${numVariables} vars): columnas ${columnaActual} a ${columnaActual + numVariables - 1}`);
+                // Para cada subgrupo: combinaciones especiales
+                let subgrupoOffset = 0;
+                columna.subgrupos.forEach((subgrupo, subgrupoIndex) => {
+                    // CASO 1: Subgrupos CON nombre (como "ESQUEMAS POR BIOLÓGICO...")
+                    if (subgrupo.nombre && subgrupo.nombre.trim() !== "") {
+                        if (subgrupo.variables.length > 1) {
+                            // COMBINACIÓN PARA SUBGRUPOS CON NOMBRE (fila 2)
+                            worksheet.mergeCells(2, columnaActual + subgrupoOffset, 2, columnaActual + subgrupoOffset + subgrupo.variables.length - 1);
+                            console.log(`🔧 Combinado subgrupo "${subgrupo.nombre}" en fila 2: columnas ${columnaActual + subgrupoOffset} a ${columnaActual + subgrupoOffset + subgrupo.variables.length - 1}`);
+                        }
+                        
+                        // COMBINACIÓN VERTICAL PARA VARIABLES (fila 3-4)
+                        for (let i = 0; i < subgrupo.variables.length; i++) {
+                            if (encabezadosFilas.fila3[columnaOffset + subgrupoOffset + i] && 
+                                encabezadosFilas.fila4[columnaOffset + subgrupoOffset + i] === "") {
+                                worksheet.mergeCells(3, columnaActual + subgrupoOffset + i, 4, columnaActual + subgrupoOffset + i);
+                                console.log(`🔧 Combinado variable "${subgrupo.variables[i].nombre}" verticalmente en columna ${columnaActual + subgrupoOffset + i}`);
+                            }
+                        }
+                    } 
+                    // CASO 2: Subgrupos SIN nombre (DPT y SRP)
+                    else {
+                        // PARA DPT Y SRP: COMBINAR FILAS 2-4 VERTICALMENTE (3 FILAS DE ALTURA)
+                        for (let i = 0; i < subgrupo.variables.length; i++) {
+                            worksheet.mergeCells(2, columnaActual + subgrupoOffset + i, 4, columnaActual + subgrupoOffset + i);
+                            console.log(`🔧 Combinado variable "${subgrupo.variables[i].nombre}" verticalmente filas 2-4 en columna ${columnaActual + subgrupoOffset + i}`);
+                        }
                     }
                     
-                    columnaActual += numVariables;
+                    subgrupoOffset += subgrupo.variables.length;
                 });
+                
+                columnaActual += totalVariablesEnGrupo;
+                columnaOffset += totalVariablesEnGrupo;
+                
             } else {
-                // Para columnas simples: combinar verticalmente 4 filas
+                // Para columnas simples: combinar las 4 filas verticalmente
                 worksheet.mergeCells(1, columnaActual, 4, columnaActual);
                 console.log(`🔧 Combinando columna simple "${columna.nombre}" verticalmente: columna ${columnaActual}`);
                 columnaActual++;
+                columnaOffset++;
             }
         });
         
-        // 6. Aplicar formato
-        const colorColumnasFijas = 'FF7030A0'; // Morado
+        // 9. SEXTO: Aplicar formato CON COLORES POR VARIABLE
+// 9. SEXTO: Aplicar formato CON COLORES POR VARIABLE - VERSIÓN CORREGIDA
+for (let i = 0; i < totalColumnasFijas; i++) {
+    const columnaExcel = columnaInicioFijas + i;
+    const colorColumna = coloresPorColumna[i];
+    const esDirecta = esVariableDirecta[i];
+    
+    // Obtener los valores para determinar qué formato aplicar
+    const valorFila1 = encabezadosFilas.fila1[i];
+    const valorFila2 = encabezadosFilas.fila2[i];
+    const valorFila3 = encabezadosFilas.fila3[i];
+    
+    // Determinar si esta columna es de población (columnas simples)
+    const esColumnaPoblacion = valorFila1 && (
+        valorFila1.includes("POBLACIÓN") || 
+        valorFila1.includes("POBLACION")
+    );
+    
+    // Determinar si el color es oscuro (necesita texto blanco)
+    const coloresOscuros = ['FF4F81BD', 'FF7030A0', 'FFC0504D', 'FF8064A2']; // Azul, Morado, Rojo, Morado claro
+    const esColorOscuro = coloresOscuros.includes(colorColumna);
+    const colorTexto = esColorOscuro ? 'FFFFFFFF' : 'FF000000';
+    const colorTextoClaro = 'FFFFFFFF'; // Texto blanco
+    const colorTextoOscuro = 'FF000000'; // Texto negro
+    
+    // ============================================
+    // FILA 1: Nombres de grupos o columnas simples
+    // ============================================
+    const cellFila1 = worksheet.getRow(1).getCell(columnaExcel);
+    
+    let colorFila1;
+    if (esColumnaPoblacion) {
+        // Para columnas de población: usar su color específico
+        colorFila1 = colorColumna;
+    } else if (valorFila1 && valorFila1.includes("COBERTURA PVU")) {
+        // Grupo COBERTURA PVU: usar color morado
+        colorFila1 = 'FF7030A0';
+    } else {
+        // Otros casos: usar color de la columna
+        colorFila1 = colorColumna;
+    }
+    
+    // Determinar color de texto para fila 1
+    const esColorFila1Oscuro = coloresOscuros.includes(colorFila1);
+    const textoFila1 = esColorFila1Oscuro ? colorTextoClaro : colorTextoOscuro;
+    
+    cellFila1.font = { 
+        bold: true, 
+        size: 14, 
+        color: { argb: textoFila1 } 
+    };
+    cellFila1.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: colorFila1 }
+    };
+    cellFila1.alignment = { 
+        vertical: 'middle', 
+        horizontal: 'center', 
+        wrapText: true
+    };
+    cellFila1.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+    };
+    
+    // ============================================
+    // FILA 2: Puede tener subgrupos, variables, o estar vacía
+    // ============================================
+    const cellFila2 = worksheet.getRow(2).getCell(columnaExcel);
+    
+    if (esColumnaPoblacion) {
+        // Para columnas de población (combinadas verticalmente): mismo color que fila 1
+        cellFila2.font = { bold: true, size: 10, color: { argb: textoFila1 } };
+        cellFila2.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorFila1 }
+        };
+    } else if (valorFila2 && valorFila2.includes("ESQUEMAS")) {
+    // Subgrupo con nombre - color diferente para cada subgrupo
+    let colorSubgrupo;
+    if (valorFila2.includes("MENORES DE 1 AÑO")) {
+        colorSubgrupo = 'FF4BACC6'; // Azul claro para primer subgrupo
+    } else if (valorFila2.includes("EN 1 AÑO")) {
+        colorSubgrupo = 'FF95B3D7'; // Azul medio para segundo subgrupo
+    } else {
+        colorSubgrupo = 'FFB7DEE8'; // Azul muy claro para otros
+    }
+    
+    const colorFila2 = colorSubgrupo.replace('FF', 'DD'); // Hacer más claro
+    
+    cellFila2.font = { bold: true, size: 11, color: { argb: 'FF000000' } };
+    cellFila2.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: colorFila2 }
+    };
+    } else if (valorFila2 && (valorFila2.includes("DPT") || valorFila2.includes("SRP"))) {
+        // Variables DPT/SRP - color ESPECÍFICO de la variable
+        cellFila2.font = { bold: true, size: 10, color: { argb: colorTexto } };
+        cellFila2.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorColumna }
+        };
+    } else if (esDirecta) {
+        // Variable directa (parte de DPT/SRP) - color de la variable
+        cellFila2.font = { bold: true, size: 10, color: { argb: colorTexto } };
+        cellFila2.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorColumna }
+        };
+    } else {
+        // Vacío en grupo COBERTURA PVU - color del grupo (morado)
+        const esEnGrupoPVU = valorFila1 && valorFila1.includes("COBERTURA PVU");
+        const colorFondoFila2 = esEnGrupoPVU ? 'FF7030A0' : colorFila1;
+        const textoFila2 = esEnGrupoPVU ? colorTextoClaro : textoFila1;
         
-        // Resetear columnaActual para aplicar formato
-        columnaActual = columnaInicioFijas;
+        cellFila2.font = { bold: true, size: 10, color: { argb: textoFila2 } };
+        cellFila2.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorFondoFila2 }
+        };
+    }
+    
+    cellFila2.alignment = { 
+        vertical: 'middle', 
+        horizontal: 'center', 
+        wrapText: true
+    };
+    cellFila2.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+    };
+    
+    // ============================================
+    // FILAS 3 y 4
+    // ============================================
+    const cellFila3 = worksheet.getRow(3).getCell(columnaExcel);
+    const cellFila4 = worksheet.getRow(4).getCell(columnaExcel);
+    
+    if (esColumnaPoblacion) {
+        // Para columnas de población (combinadas verticalmente): mismo color que fila 1
+        cellFila3.font = { bold: true, size: 10, color: { argb: textoFila1 } };
+        cellFila3.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorFila1 }
+        };
+        cellFila3.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'center', 
+            wrapText: true
+        };
+        cellFila3.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
         
-        columnasFijas.forEach(columna => {
-            if (columna.esGrupo) {
-                columna.subgrupos.forEach(subgrupo => {
-                    subgrupo.variables.forEach((variable, varIndex) => {
-                        const columnaReal = columnaActual + varIndex;
-                        
-                        // Formato para filas 3 y 4 (variables)
-                        const cellFila3 = worksheet.getRow(3).getCell(columnaReal);
-                        const cellFila4 = worksheet.getRow(4).getCell(columnaReal);
-                        
-                        cellFila3.font = { bold: true, size: 8 };
-                        cellFila3.fill = {
-                            type: 'pattern',
-                            pattern: 'solid',
-                            fgColor: { argb: colorColumnasFijas.replace('FF', 'CC') }
-                        };
-                        cellFila3.alignment = { 
-                            vertical: 'middle', 
-                            horizontal: 'center', 
-                            wrapText: true
-                        };
-                        
-                        cellFila4.font = { bold: true, size: 8 };
-                        cellFila4.fill = {
-                            type: 'pattern',
-                            pattern: 'solid',
-                            fgColor: { argb: colorColumnasFijas.replace('FF', 'CC') }
-                        };
-                        cellFila4.alignment = { 
-                            vertical: 'middle', 
-                            horizontal: 'center', 
-                            wrapText: true
-                        };
-                    });
-                    
-                    // Avanzar columnaActual después de procesar todas las variables del subgrupo
-                    columnaActual += subgrupo.variables.length;
-                });
-            } else {
-                // Formato para columnas simples
-                const cell = worksheet.getRow(1).getCell(columnaActual);
-                cell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
-                cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: colorColumnasFijas }
-                };
-                cell.alignment = { 
-                    vertical: 'middle', 
-                    horizontal: 'center', 
-                    wrapText: true
-                };
-                columnaActual++;
-            }
-        });
+        cellFila4.font = { bold: true, size: 10, color: { argb: textoFila1 } };
+        cellFila4.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorFila1 }
+        };
+        cellFila4.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'center', 
+            wrapText: true
+        };
+        cellFila4.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+    } else if (valorFila3) {
+        // Para variables normales (en fila 3) - color ESPECÍFICO de la variable
+        const colorVariables = colorColumna.replace('FF', 'CC'); // Hacer más claro
+        cellFila3.font = { bold: true, size: 10, color: { argb: colorTextoOscuro } };
+        cellFila3.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorVariables }
+        };
+        cellFila3.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'center', 
+            wrapText: true
+        };
+        cellFila3.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
         
-        // 7. Ajustar anchos de columnas
+        // Fila 4 vacía si se combinó con fila 3 - mismo color
+        cellFila4.font = { bold: true, size: 10, color: { argb: colorTextoOscuro } };
+        cellFila4.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorVariables }
+        };
+        cellFila4.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'center', 
+            wrapText: true
+        };
+        cellFila4.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+    } else if (valorFila2 && (valorFila2.includes("DPT") || valorFila2.includes("SRP"))) {
+        // Para DPT/SRP: filas 3 y 4 están vacías pero tienen el mismo formato que fila 2
+        cellFila3.font = { bold: false, size: 10, color: { argb: colorTexto } };
+        cellFila3.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorColumna }
+        };
+        cellFila3.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'center', 
+            wrapText: true
+        };
+        cellFila3.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+        
+        cellFila4.font = { bold: false, size: 10, color: { argb: colorTexto } };
+        cellFila4.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorColumna }
+        };
+        cellFila4.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'center', 
+            wrapText: true
+        };
+        cellFila4.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+    } else {
+        // Para celdas completamente vacías en grupo COBERTURA PVU
+        const esEnGrupoPVU = valorFila1 && valorFila1.includes("COBERTURA PVU");
+        const colorFondoVacias = esEnGrupoPVU ? 'FF7030A0' : colorFila1;
+        const textoVacias = esEnGrupoPVU ? colorTextoClaro : textoFila1;
+        
+        cellFila3.font = { bold: false, size: 10, color: { argb: textoVacias } };
+        cellFila3.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorFondoVacias }
+        };
+        cellFila3.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'center', 
+            wrapText: true
+        };
+        cellFila3.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+        
+        cellFila4.font = { bold: false, size: 10, color: { argb: textoVacias } };
+        cellFila4.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colorFondoVacias }
+        };
+        cellFila4.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'center', 
+            wrapText: true
+        };
+        cellFila4.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+    }
+}
+        
+        // 10. SÉPTIMO: Ajustar anchos de columnas
+        columnaOffset = 0;
         columnaActual = columnaInicioFijas;
         
         columnasFijas.forEach(columna => {
@@ -1175,18 +1500,57 @@ function agregarColumnasFijasConFormulas(worksheet, estructura, filaInicioDatos 
                 columna.subgrupos.forEach(subgrupo => {
                     subgrupo.variables.forEach(variable => {
                         worksheet.getColumn(columnaActual).width = variable.ancho || 12;
-                        console.log(`🔧 Ancho columna ${columnaActual}: ${variable.ancho || 12} (${variable.nombre})`);
+                        console.log(`🔧 Ancho columna ${columnaActual}: ${variable.ancho || 12} (${variable.nombre} - ${variable.color})`);
                         columnaActual++;
                     });
                 });
             } else {
-                worksheet.getColumn(columnaActual).width = columna.ancho || 12;
-                console.log(`🔧 Ancho columna ${columnaActual}: ${columna.ancho || 12} (${columna.nombre})`);
+                worksheet.getColumn(columnaActual).width = columna.ancho || 15;
+                console.log(`🔧 Ancho columna ${columnaActual}: ${columna.ancho || 15} (${columna.nombre} - ${columna.color})`);
                 columnaActual++;
             }
         });
         
-        console.log(`✅ Columnas fijas agregadas correctamente. Total columnas: ${columnaActual - columnaInicioFijas}`);
+        // 11. Aumentar altura de filas para mejor visualización
+        worksheet.getRow(1).height = 30;
+        worksheet.getRow(2).height = 25;
+        worksheet.getRow(3).height = 60;
+        worksheet.getRow(4).height = 60;
+        
+        // 12. AGREGAR FILAS DE DATOS VACÍAS PARA LAS COLUMNAS FIJAS
+        for (let fila = filaInicioDatos; fila <= filaInicioDatos + resultadosConsulta.length - 1; fila++) {
+            const row = worksheet.getRow(fila);
+            
+            // Agregar celdas vacías para cada columna fija
+            for (let i = 0; i < totalColumnasFijas; i++) {
+                const columnaExcel = columnaInicioFijas + i;
+                const cell = row.getCell(columnaExcel);
+                
+                // Puedes agregar fórmulas o valores aquí si es necesario
+                cell.value = ""; // Dejar vacío por ahora
+                
+                // Aplicar bordes
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                
+                // Alinear números a la derecha
+                if (typeof cell.value === 'number') {
+                    cell.alignment = { horizontal: 'right' };
+                }
+            }
+        }
+        
+        console.log(`✅ Columnas fijas agregadas correctamente. Total: ${totalColumnasFijas} columnas`);
+        console.log(`✅ Cada variable tiene su propio color único`);
+        
+        // Mostrar paleta de colores utilizada
+        const coloresUnicos = [...new Set(coloresPorColumna)];
+        console.log(`🎨 Paleta de colores utilizada:`, coloresUnicos);
+        
         return columnaInicioFijas;
         
     } catch (error) {
@@ -1194,6 +1558,8 @@ function agregarColumnasFijasConFormulas(worksheet, estructura, filaInicioDatos 
         throw error;
     }
 }
+
+
 resultadosContainer.classList.remove("d-none");
 btnExportar.disabled = false;
 // 🔹 Habilitar también el nuevo botón
