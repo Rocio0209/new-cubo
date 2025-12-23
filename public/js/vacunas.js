@@ -628,12 +628,22 @@ async function exportarTablaHTML() {
         
         // 3. Paleta de colores para apartados
         const coloresApartados = [
-            'FF4F81BD', // Azul oscuro
-            'FF9BBB59', // Verde
-            'FFC0504D', // Rojo
-            'FFF79646', // Naranja
-            'FF8064A2', // Morado
-            'FF4BACC6', // Azul claro
+            '0066cc', 
+            'ff6600', 
+            '6699ff', 
+            'FFF79646', 
+            'ffd965', 
+            '548135', 
+            '00ccff', 
+            '9933ff',
+            '00b0f0',
+            'ffc000',
+            'd4c19c',
+            'ff99cc',
+            'ff9900',
+            'ffcc99',
+            'a8d08d',
+            '6A3D8C'
         ];
         
         // 4. Crear fila 1: Encabezados principales (apartados en columnas G+)
@@ -721,7 +731,7 @@ async function exportarTablaHTML() {
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: '691C32' } // Color rojo oscuro
+                fgColor: { argb: '902449' } // Color rojo oscuro
             };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = {
@@ -928,61 +938,61 @@ function agregarColumnasFijasConFormulas(worksheet, estructura, filaInicioDatos 
                 ancho: 15,
                 formula: "",
                 esGrupo: false,
-                color: 'FF4F81BD' // Azul
+                color: '902449' 
             },
             { 
                 nombre: "POBLACIÓN 1 AÑO", 
                 ancho: 15,
                 formula: "",
                 esGrupo: false,
-                color: 'FF9BBB59' // Verde
+                color: '902449' 
             },
             { 
                 nombre: "POBLACIÓN 4 AÑO", 
                 ancho: 15,
                 formula: "",
                 esGrupo: false,
-                color: 'FFC0504D' // Rojo
+                color: '902449' 
             },
             { 
                 nombre: "POBLACIÓN 6 AÑO", 
                 ancho: 15,
                 formula: "",
                 esGrupo: false,
-                color: 'FFF79646' // Naranja
+                color: '902449' 
             },
             { 
                 nombre: "COBERTURA PVU", 
                 esGrupo: true,
-                color: 'FF7030A0', // Morado (para el grupo principal)
+                color: 'fef2cb', // Morado (para el grupo principal)
                 subgrupos: [
                     {
                         nombre: "ESQUEMAS POR BIOLÓGICO PARA MENORES DE 1 AÑO",
-                        color: 'FF4BACC6',
+                        color: 'ffc000',
                         variables: [
-                            { nombre: "% BCG", formula: "", ancho: 10, color: 'FF4F81BD' }, // Azul
-                            { nombre: "%HEPATITIS B 1a", formula: "", ancho: 12, color: 'FF9BBB59' }, // Verde
-                            { nombre: "% HEXAVALENTE ACELULAR 3a", formula: "", ancho: 15, color: 'FFC0504D' }, // Rojo
-                            { nombre: "% HEPATITIS B  1a  +  HEXAVALENTE ACELULAR 3a", formula: "", ancho: 20, color: 'FFF79646' }, // Naranja
-                            { nombre: "% ROTAVIRUS RV1 2a", formula: "", ancho: 15, color: 'FF8064A2' }, // Morado claro
-                            { nombre: "% ROTAVIRUS  RV5 3a", formula: "", ancho: 15, color: 'FF4BACC6' }, // Azul claro
-                            { nombre: "%ROTAVIRUS RV1 2a + RV5 3a", formula: "", ancho: 18, color: 'FF4F81BD' }, // Azul
-                            { nombre: "% NEUMOCÓCICA CONJUGADA (13 VALENTE) 2a", formula: "", ancho: 22, color: 'FF9BBB59' }, // Verde
-                            { nombre: "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS <1 AÑO", formula: "", ancho: 25, color: 'FFC0504D' }, // Rojo
-                            { nombre: "PROMEDIO ESQUEMA COMPLETO COBERTURAS EN <1 AÑO", formula: "", ancho: 20, color: 'FFF79646' } // Naranja
+                            { nombre: "% BCG", formula: "", ancho: 10, color: '0066cc' }, // Azul
+                            { nombre: "%HEPATITIS B 1a", formula: "", ancho: 12, color: 'ff6600' }, // Verde
+                            { nombre: "% HEXAVALENTE ACELULAR 3a", formula: "", ancho: 15, color: '6699ff' }, // Rojo
+                            { nombre: "% HEPATITIS B  1a  +  HEXAVALENTE ACELULAR 3a", formula: "", ancho: 20, color: '6699ff' }, // Naranja
+                            { nombre: "% ROTAVIRUS RV1 2a", formula: "", ancho: 15, color: '548135' }, // Morado claro
+                            { nombre: "% ROTAVIRUS  RV5 3a", formula: "", ancho: 15, color: '548135' }, // Azul claro
+                            { nombre: "%ROTAVIRUS RV1 2a + RV5 3a", formula: "", ancho: 18, color: '548135' }, // Azul
+                            { nombre: "% NEUMOCÓCICA CONJUGADA (13 VALENTE) 2a", formula: "", ancho: 22, color: '00ccff' }, // Verde
+                            { nombre: "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS <1 AÑO", formula: "", ancho: 25, color: 'ffc000' }, // Rojo
+                            { nombre: "PROMEDIO ESQUEMA COMPLETO COBERTURAS EN <1 AÑO", formula: "", ancho: 20, color: 'ffc000' } // Naranja
                         ]
                     },
                     {
                         nombre: "ESQUEMAS COMPLETOS POR BIOLÓGICO EN 1 AÑO",
-                        color: 'FF95B3D7',
+                        color: '70ad47',
                         variables: [
-                            { nombre: "% HEXAVALENTE 4a", formula: "", ancho: 15, color: 'FF4F81BD' }, // Azul
-                            { nombre: "% NEUMOCÓCICA 3a", formula: "", ancho: 15, color: 'FF9BBB59' }, // Verde
-                            { nombre: "% SRP 1ra", formula: "", ancho: 10, color: 'FFC0504D' }, // Rojo
-                            { nombre: "% SRP 18 Meses", formula: "", ancho: 12, color: 'FFF79646' }, // Naranja
-                            { nombre: "% SRP 2da", formula: "", ancho: 10, color: 'FF8064A2' }, // Morado claro
-                            { nombre: "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS 1 AÑO", formula: "", ancho: 25, color: 'FF4BACC6' }, // Azul claro
-                            { nombre: "% PROMEDIO ESQUEMA COMPLETO EN 1 AÑO", formula: "", ancho: 20, color: 'FF4F81BD' } // Azul
+                            { nombre: "% HEXAVALENTE 4a", formula: "", ancho: 15, color: '6699ff' }, // Azul
+                            { nombre: "% NEUMOCÓCICA 3a", formula: "", ancho: 15, color: '00ccff' }, // Verde
+                            { nombre: "% SRP 1ra", formula: "", ancho: 10, color: '9933ff' }, // Rojo
+                            { nombre: "% SRP 18 Meses", formula: "", ancho: 12, color: '9933ff' }, // Naranja
+                            { nombre: "% SRP 2da", formula: "", ancho: 10, color: '9933ff' }, // Morado claro
+                            { nombre: "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS 1 AÑO", formula: "", ancho: 25, color: '70ad47' }, // Azul claro
+                            { nombre: "% PROMEDIO ESQUEMA COMPLETO EN 1 AÑO", formula: "", ancho: 20, color: '70ad47' } // Azul
                         ]
                     },
                     // DPT y SRP SIN NOMBRE DE SUBGRUPO - OCUPAN FILAS 2-4
@@ -990,8 +1000,8 @@ function agregarColumnasFijasConFormulas(worksheet, estructura, filaInicioDatos 
                         nombre: "", // Subgrupo sin nombre
                         color: 'FFB7DEE8',
                         variables: [
-                            { nombre: "% ESQUEMA COMPLETO DE DPT EN 4 AÑOS", formula: "", ancho: 20, color: 'FFC0504D' }, // Rojo
-                            { nombre: "% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS", formula: "", ancho: 20, color: 'FF9BBB59' } // Verde
+                            { nombre: "% ESQUEMA COMPLETO DE DPT EN 4 AÑOS", formula: "", ancho: 20, color: 'ffd965' }, // Rojo
+                            { nombre: "% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS", formula: "", ancho: 20, color: '6699ff' } // Verde
                         ]
                     }
                 ]
@@ -1052,7 +1062,7 @@ function agregarColumnasFijasConFormulas(worksheet, estructura, filaInicioDatos 
                 for (let i = 0; i < totalVariablesEnGrupo; i++) {
                     encabezadosFilas.fila1[columnaOffset + i] = columna.nombre;
                     // Fila 1 usa el color del grupo principal
-                    coloresPorColumna[columnaOffset + i] = columna.color || 'FF7030A0';
+                    coloresPorColumna[columnaOffset + i] = columna.color || 'fef2cb';
                 }
                 
                 // Procesar cada subgrupo
@@ -1085,7 +1095,7 @@ function agregarColumnasFijasConFormulas(worksheet, estructura, filaInicioDatos 
                         }
                         
                         // Guardar el color ESPECÍFICO de esta variable para las filas 2-4
-                        coloresPorColumna[columnaOffset + subgrupoOffset + varIndex] = variable.color || 'FF7030A0';
+                        coloresPorColumna[columnaOffset + subgrupoOffset + varIndex] = variable.color || 'fef2cb';
                     });
                     
                     subgrupoOffset += subgrupo.variables.length;
@@ -1101,7 +1111,7 @@ function agregarColumnasFijasConFormulas(worksheet, estructura, filaInicioDatos 
                 encabezadosFilas.fila4[columnaOffset] = "";
                 
                 // Guardar color para columnas simples (todas las filas)
-                coloresPorColumna[columnaOffset] = columna.color || 'FF7030A0';
+                coloresPorColumna[columnaOffset] = columna.color || 'f0f0f0';
                 
                 columnaOffset++;
             }
@@ -1205,7 +1215,7 @@ for (let i = 0; i < totalColumnasFijas; i++) {
     );
     
     // Determinar si el color es oscuro (necesita texto blanco)
-    const coloresOscuros = ['FF4F81BD', 'FF7030A0', 'FFC0504D', 'FF8064A2']; // Azul, Morado, Rojo, Morado claro
+    const coloresOscuros = ['902449', '0066CC']; // Azul, Morado, Rojo, Morado claro
     const esColorOscuro = coloresOscuros.includes(colorColumna);
     const colorTexto = esColorOscuro ? 'FFFFFFFF' : 'FF000000';
     const colorTextoClaro = 'FFFFFFFF'; // Texto blanco
@@ -1222,7 +1232,7 @@ for (let i = 0; i < totalColumnasFijas; i++) {
         colorFila1 = colorColumna;
     } else if (valorFila1 && valorFila1.includes("COBERTURA PVU")) {
         // Grupo COBERTURA PVU: usar color morado
-        colorFila1 = 'FF7030A0';
+        colorFila1 = 'fef2cb';
     } else {
         // Otros casos: usar color de la columna
         colorFila1 = colorColumna;
@@ -1271,9 +1281,9 @@ for (let i = 0; i < totalColumnasFijas; i++) {
     // Subgrupo con nombre - color diferente para cada subgrupo
     let colorSubgrupo;
     if (valorFila2.includes("MENORES DE 1 AÑO")) {
-        colorSubgrupo = 'FF4BACC6'; // Azul claro para primer subgrupo
+        colorSubgrupo = 'ffc000'; // Azul claro para primer subgrupo
     } else if (valorFila2.includes("EN 1 AÑO")) {
-        colorSubgrupo = 'FF95B3D7'; // Azul medio para segundo subgrupo
+        colorSubgrupo = '70ad47'; // Azul medio para segundo subgrupo
     } else {
         colorSubgrupo = 'FFB7DEE8'; // Azul muy claro para otros
     }
@@ -1305,7 +1315,7 @@ for (let i = 0; i < totalColumnasFijas; i++) {
     } else {
         // Vacío en grupo COBERTURA PVU - color del grupo (morado)
         const esEnGrupoPVU = valorFila1 && valorFila1.includes("COBERTURA PVU");
-        const colorFondoFila2 = esEnGrupoPVU ? 'FF7030A0' : colorFila1;
+        const colorFondoFila2 = esEnGrupoPVU ? 'fef2cb' : colorFila1;
         const textoFila2 = esEnGrupoPVU ? colorTextoClaro : textoFila1;
         
         cellFila2.font = { bold: true, size: 10, color: { argb: textoFila2 } };
@@ -1412,7 +1422,7 @@ for (let i = 0; i < totalColumnasFijas; i++) {
         };
     } else if (valorFila2 && (valorFila2.includes("DPT") || valorFila2.includes("SRP"))) {
         // Para DPT/SRP: filas 3 y 4 están vacías pero tienen el mismo formato que fila 2
-        cellFila3.font = { bold: false, size: 10, color: { argb: colorTexto } };
+        cellFila3.font = { bold: true, size: 10, color: { argb: colorTexto } };
         cellFila3.fill = {
             type: 'pattern',
             pattern: 'solid',
@@ -1430,7 +1440,7 @@ for (let i = 0; i < totalColumnasFijas; i++) {
             right: { style: 'thin' }
         };
         
-        cellFila4.font = { bold: false, size: 10, color: { argb: colorTexto } };
+        cellFila4.font = { bold: true, size: 10, color: { argb: colorTexto } };
         cellFila4.fill = {
             type: 'pattern',
             pattern: 'solid',
@@ -1450,10 +1460,10 @@ for (let i = 0; i < totalColumnasFijas; i++) {
     } else {
         // Para celdas completamente vacías en grupo COBERTURA PVU
         const esEnGrupoPVU = valorFila1 && valorFila1.includes("COBERTURA PVU");
-        const colorFondoVacias = esEnGrupoPVU ? 'FF7030A0' : colorFila1;
+        const colorFondoVacias = esEnGrupoPVU ? 'fef2cb' : colorFila1;
         const textoVacias = esEnGrupoPVU ? colorTextoClaro : textoFila1;
         
-        cellFila3.font = { bold: false, size: 10, color: { argb: textoVacias } };
+        cellFila3.font = { bold: true, size: 10, color: { argb: textoVacias } };
         cellFila3.fill = {
             type: 'pattern',
             pattern: 'solid',
@@ -1471,7 +1481,7 @@ for (let i = 0; i < totalColumnasFijas; i++) {
             right: { style: 'thin' }
         };
         
-        cellFila4.font = { bold: false, size: 10, color: { argb: textoVacias } };
+        cellFila4.font = { bold: true, size: 10, color: { argb: textoVacias } };
         cellFila4.fill = {
             type: 'pattern',
             pattern: 'solid',
