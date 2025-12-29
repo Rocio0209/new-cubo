@@ -153,33 +153,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnExportar.addEventListener("click", exportarExcel);
     const btnExportarSimple = document.getElementById('btnExportarSimple');
     btnExportarSimple.addEventListener("click", exportarTablaHTML);
-
-
-    // btnTodasHG.addEventListener("click", () => {
-    //     const seleccionadas = cluesDisponibles.filter(c => c.startsWith("HG"));
-    //     $("#cluesSelect").val(seleccionadas).trigger("change");
-    // });
-
-    // btnTodasHGIMB.addEventListener("click", () => {
-    //     const catalogo = catalogoSelect.value;
-
-    //     mostrarSpinner();
-
-    //     fetch(`${API_FASTAPI}/clues_filtradas?catalogo=${catalogo}&cubo=${cuboActivo}&prefijo=HGIMB`)
-    //         .then(r => r.json())
-    //         .then(data => {
-    //             cluesDisponibles = data.clues;
-
-    //             $("#cluesSelect").empty();
-    //             cluesDisponibles.forEach(c => {
-    //                 $("#cluesSelect").append(new Option(c, c));
-    //             });
-
-    //             $("#cluesSelect").val(cluesDisponibles).trigger("change");
-    //         })
-    //         .finally(ocultarSpinner);
-    // });
-
 });
 ;
 
@@ -274,9 +247,7 @@ function consultarBiologicos() {
         .map(o => o.value)
         .filter(v => v && v.trim() !== "");
 
-
     mostrarSpinner();
-
 
     // IPCONFIG
     // fetch("http://0.0.0.0:8000"+ API_LARAVEL, {
@@ -304,8 +275,6 @@ function consultarBiologicos() {
                     r.biologicos.find(b => b.apartado.includes("132"))
                 )
             );
-
-
 
             resumenConsulta.innerHTML = `
                 <strong>Catálogo: </strong>${data.catalogo} –
@@ -428,7 +397,6 @@ function renderTabla(data) {
 
     tablaFooter.innerHTML = `<tr class="table-secondary">${filaTotales}</tr>`;
 }
-
 
 
 // ===============================
@@ -574,10 +542,6 @@ async function exportarExcel() {
         ocultarSpinner();
     }
 }
-
-// ===============================
-// Descargar Tabla HTML como Excel Simple
-// ===============================
 
 // ===============================
 // Función auxiliar: construir estructura de encabezados
@@ -1897,132 +1861,8 @@ async function exportarTablaHTML() {
     }
 }
 
-
-
 resultadosContainer.classList.remove("d-none");
 btnExportar.disabled = false;
-// 🔹 Habilitar también el nuevo botón
-// btnExportarSimple.disabled = false;
-
-// // En la función resetearInterfaz():
-// btnExportarSimple.disabled = true;
-
-// // En el event listener de btnLimpiarClues:
-// btnExportarSimple.disabled = true;
-
-
-// ===============================
-// Función para obtener fórmula según el nombre de la variable
-// ===============================
-// function obtenerFormulaPorVariable(nombreVariable) {
-//     // Mapeo de fórmulas basado en patrones en los nombres de variables
-//     const formulas = {
-//         // Patrones para % BCG y similares
-//         "% BCG": "=SI.ERROR(({BCG})/((POBLACIÓN <1 AÑO*0.0833)*12),0)",
-//         "%HEPATITIS B 1a": "=SI.ERROR(({HEP_B})/((POBLACIÓN <1 AÑO*0.0833)*12),0)",
-//         "% HEXAVALENTE ACELULAR 3a": "=SI.ERROR(({HEXAVALENTE})/((POBLACIÓN <1 AÑO*0.0833)*12),0)",
-//         "% HEPATITIS B 1a + HEXAVALENTE ACELULAR 3a": "=SI.ERROR(({HEP_B_HEX})/((POBLACIÓN <1 AÑO*0.0833)*12),0)",
-
-//         // Patrones para ROTAVIRUS
-//         "ROTAVIRUS": "=SI.ERROR(({ROTAVIRUS})/((POBLACIÓN <1 AÑO*0.0833)*12),0)",
-
-//         // Patrones para NEUMOCÓCICA
-//         "NEUMOCÓCICA": "=SI.ERROR(({NEUMOCOCICA})/((POBLACIÓN <1 AÑO*0.0833)*12),0)",
-
-//         // Patrones para DOSIS APLICADAS
-//         "DOSIS APLICADAS": "=SUM({DOSIS_VARIABLES})",
-
-//         // Patrones para PROMEDIO ESQUEMA COMPLETO
-//         "PROMEDIO ESQUEMA COMPLETO": "=SI.ERROR(({TOTAL_DOSIS})/((POBLACIÓN <1 AÑO*0.0833)*12),0)",
-
-//         // Patrones para 1 AÑO
-//         "% HEXAVALENTE 4a": "=SI.ERROR(({HEXAVALENTE_4A})/((POBLACIÓN 1 AÑO*0.0833)*12),0)",
-//         "% NEUMOCÓCICA 3a": "=SI.ERROR(({NEUMOCOCICA_3A})/((POBLACIÓN 1 AÑO*0.0833)*12),0)",
-//         "% SRP": "=SI.ERROR(({SRP})/((POBLACIÓN 1 AÑO*0.0833)*12),0)",
-
-//         // Patrones para DPT y SRP por edad
-//         "DPT EN 4 AÑOS": "=SI.ERROR(({DPT})/((POBLACIÓN 4 AÑO*0.0833)*12),0)",
-//         "SRP 2a EN 6 AÑOS": "=SI.ERROR(({SRP_2A})/((POBLACIÓN 6 AÑO*0.0833)*12),0)"
-//     };
-
-//     // Buscar la fórmula por coincidencia de patrones
-//     for (const [patron, formula] of Object.entries(formulas)) {
-//         if (nombreVariable.includes(patron)) {
-//             return formula;
-//         }
-//     }
-
-//     // Si no encuentra patrón, fórmula por defecto
-//     return "=0";
-// }
-
-
-// function mapearVariableACodigo(nombreVariable, estructuraDinamica) {
-
-//     const mapeo = {
-//         "% BCG": [["BIO01", "BIO50"],["VBC02", "BIO50"]],
-//         "%HEPATITIS B 1a": ["BIO02", "BIO51"],
-//         "% HEXAVALENTE ACELULAR 3a": ["BIO03", "BIO04", "BIO05"],
-//         "% HEPATITIS B 1a + HEXAVALENTE ACELULAR 3a": ["BIO02", "BIO51", "BIO03", "BIO04", "BIO05"],
-//         "% ROTAVIRUS RV1 2a": ["BIO06"],
-//         "% ROTAVIRUS RV5 3a": ["BIO07"],
-//         "%ROTAVIRUS RV1 2a + RV5 3a": ["BIO06", "BIO07"],
-//         "% NEUMOCÓCICA CONJUGADA (13 VALENTE) 2a": ["BIO08"],
-//         "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS <1 AÑO": ["BIO01", "BIO02", "BIO03", "BIO04", "BIO05", "BIO06", "BIO07", "BIO08", "BIO50", "BIO51", "VBC02"],
-//         "PROMEDIO ESQUEMA COMPLETO COBERTURAS EN <1 AÑO": ["BCG_TOTAL", "HEP_B_TOTAL", "HEX_TOTAL", "ROTA_TOTAL", "NEUMO_TOTAL"],
-//         "% HEXAVALENTE 4a": ["BIO09"],
-//         "% NEUMOCÓCICA 3a": ["BIO10"],
-//         "% SRP 1ra": ["BIO11"],
-//         "% SRP 18 Meses": ["BIO12"],
-//         "% SRP 2da": ["BIO13"],
-//         "DOSIS APLICADAS PARA CÁLCULO DE PROMEDIO DE ESQUEMAS COMPLETOS 1 AÑO": ["BIO09", "BIO10", "BIO11", "BIO12", "BIO13"],
-//         "% PROMEDIO ESQUEMA COMPLETO EN 1 AÑO": ["HEX_4A_TOTAL", "NEUMO_3A_TOTAL", "SRP_TOTAL"],
-//         "% ESQUEMA COMPLETO DE DPT EN 4 AÑOS": ["BIO14", "BIO15", "BIO16"],
-//         "% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS": ["BIO17"]
-//     };
-
-//     // Buscar el mapeo
-//     for (const [variablePatron, codigos] of Object.entries(mapeo)) {
-//         if (nombreVariable.includes(variablePatron)) {
-//             return codigos;
-//         }
-//     }
-
-//     return [];
-// }
-
-
-// ===============================
-// Funciones auxiliares para construir fórmulas específicas
-// ===============================
-// function construirFormulaBCG(referenciaPoblacion) {
-//     // Fórmula para % BCG: =SI.ERROR((BIO01 + BIO50 OR VBC02 + BIO50) / (Población menor de 1 año*0.0833)*12),0)
-//     // Necesitas mapear BIO01, BIO50, VBC02 a las columnas correctas
-
-//     // Suponiendo que BIO01 está en columna X, BIO50 en Y, VBC02 en Z
-//     // Esto depende de cómo estén organizadas tus columnas dinámicas
-
-//     return `=SI.ERROR((SUM(X{FILA}:Z{FILA}))/((${referenciaPoblacion}{FILA}*0.0833)*12),0)`;
-// }
-
-// function construirFormulaHepatitisB(referenciaPoblacion) {
-//     return `=SI.ERROR((SUM(AA{FILA}:AB{FILA}))/((${referenciaPoblacion}{FILA}*0.0833)*12),0)`;
-// }
-
-// ===============================
-// Función para obtener referencia de columna por nombre
-// ===============================
-// function obtenerReferenciaColumna(worksheet, nombreColumna) {
-//     // Buscar en las primeras filas el nombre de la columna
-//     for (let col = 1; col <= worksheet.columnCount; col++) {
-//         const cell = worksheet.getRow(1).getCell(col);
-//         if (cell.value === nombreColumna) {
-//             // Convertir número de columna a letra (A, B, C, ...)
-//             return numeroALetra(col);
-//         }
-//     }
-//     return "A"; // Por defecto
-// }
 
 // ===============================
 // Convertir número de columna a letra
