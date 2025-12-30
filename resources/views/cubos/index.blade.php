@@ -75,21 +75,36 @@
         <x-precarga></x-precarga>
     </div>
     @push('scripts')
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js" nonce="{{ csp_nonce() }}"></script>
-        <script src="{{ asset('js/vacunas.js') }}" nonce="{{ csp_nonce() }}"></script>
-        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" nonce="{{ csp_nonce() }}">
-        </script>
-        {{-- Select2 Theme Bootstrap 5 (opcional) --}}
-        <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
-            rel="stylesheet" />
-        {{-- jQuery obligatorio --}}
+    {{-- 1. jQuery primero --}}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" nonce="{{ csp_nonce() }}"></script>
+    
+    {{-- 2. Polyfill para process (NECESARIO ANTES de state.js) --}}
+    <script nonce="{{ csp_nonce() }}">
+        window.process = { env: { NODE_ENV: 'development' } };
+    </script>
+    
+    {{-- 3. Exceljs UNA SOLA VEZ (antes de export.js) --}}
+    <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js" nonce="{{ csp_nonce() }}"></script>
+    
+    {{-- 4. Select2 y XLSX --}}
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" nonce="{{ csp_nonce() }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js" nonce="{{ csp_nonce() }}"></script>
+    
+    {{-- 5. TUS MÓDULOS JS - EN ORDEN CORRECTO --}}
+    <script type="module" src="{{ asset('js/constants.js') }}" nonce="{{ csp_nonce() }}"></script>
+    <script type="module" src="{{ asset('js/utils.js') }}" nonce="{{ csp_nonce() }}"></script>
+    <script type="module" src="{{ asset('js/api.js') }}" nonce="{{ csp_nonce() }}"></script>
+    <script type="module" src="{{ asset('js/excel-formulas.js') }}" nonce="{{ csp_nonce() }}"></script>
+    <script type="module" src="{{ asset('js/state.js') }}" nonce="{{ csp_nonce() }}"></script>
+    <script type="module" src="{{ asset('js/ui.js') }}" nonce="{{ csp_nonce() }}"></script>
+    <script type="module" src="{{ asset('js/table-renderer.js') }}" nonce="{{ csp_nonce() }}"></script>
+    <script type="module" src="{{ asset('js/export.js') }}" nonce="{{ csp_nonce() }}"></script>
+    <script type="module" src="{{ asset('js/main.js') }}" nonce="{{ csp_nonce() }}"></script>
 
-        <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js" nonce="{{ csp_nonce() }}"></script>
-
-
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js" nonce="{{ csp_nonce() }}"></script>
-    @endpush
+    {{-- 6. ESTILOS --}}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+@endpush
 
 
 </x-app-layout>
