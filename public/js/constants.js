@@ -290,13 +290,13 @@ export const EXCEL_CONFIG = {
     
     // Configuración de ancho de columnas
     ANCHO_COLUMNAS: {
-        CLUES: 15,
-        UNIDAD: 20,
-        ENTIDAD: 15,
-        JURISDICCION: 15,
-        MUNICIPIO: 15,
-        INSTITUCION: 15,
-        VARIABLE: 12
+        CLUES: 18,
+        UNIDAD: 18,
+        ENTIDAD: 18,
+        JURISDICCION: 18,
+        MUNICIPIO: 18,
+        INSTITUCION: 18,
+        VARIABLE: 15
     },
     
     // Altura de filas

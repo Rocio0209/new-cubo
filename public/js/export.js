@@ -366,11 +366,12 @@ function agregarDatosResultados(worksheet, estructura, resultadosConsulta, obten
                 left: { style: 'thin' },
                 bottom: { style: 'thin' },
                 right: { style: 'thin' }
-            };
+            },
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
 
             // Alinear números a la derecha para columnas de datos (G en adelante)
             if (colNumber > 6 && typeof cell.value === 'number') {
-                cell.alignment = { horizontal: 'right' };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
             }
         });
 

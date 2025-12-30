@@ -424,28 +424,28 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
                 // COLUMNAS DE POBLACIÓN (4 columnas individuales)
                 {
                     nombre: "POBLACION<1",
-                    ancho: 12,
+                    ancho: 15,
                     esGrupo: false,
                     color: '902449',
                     tipo: 'poblacion'
                 },
                 {
                     nombre: "POBLACION1",
-                    ancho: 12,
+                    ancho: 15,
                     esGrupo: false,
                     color: '902449',
                     tipo: 'poblacion'
                 },
                 {
                     nombre: "POBLACION4",
-                    ancho: 12,
+                    ancho: 15,
                     esGrupo: false,
                     color: '902449',
                     tipo: 'poblacion'
                 },
                 {
                     nombre: "POBLACION6",
-                    ancho: 12,
+                    ancho: 15,
                     esGrupo: false,
                     color: '902449',
                     tipo: 'poblacion'
@@ -742,8 +742,8 @@ function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, columnaIn
     // 4. Ajustar alturas de filas
     worksheet.getRow(1).height = 25;
     worksheet.getRow(2).height = 25;
-    worksheet.getRow(3).height = 40;
-    worksheet.getRow(4).height = 40;
+    worksheet.getRow(3).height = 60;
+    worksheet.getRow(4).height = 60;
     
     console.log("✅ Estructura de imagen 2 creada exitosamente");
 }
