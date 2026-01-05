@@ -81,7 +81,7 @@ export function obtenerFormulaExcel(nombreVariable, referenciasPoblacion, estruc
     if (item) {
         const regex = new RegExp(`\\b${codigo}\\b`, 'g');
         // 🔥 Aquí cambias: en lugar de `I{FILA}`, usas el valor real de la celda
-        formulaExcel = formulaExcel.replace(regex, `"${item.nombre}"`);
+        formulaExcel = formulaExcel.replace(regex, `"${item.columna}{FILA}"`);
     } else {
         console.warn(`⚠️ No se encontró variable para el código: ${codigo}`);
     }
@@ -808,7 +808,7 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
                                 {
                                     nombre: "% SRP 2da",
                                     formula: obtenerFormulaExcel("% SRP 2da", referenciasPoblacion, estructuraDinamica),
-                                    ancho: 10,
+ancho: 10,
                                     color: '9933ff'
                                 }
                             ]
