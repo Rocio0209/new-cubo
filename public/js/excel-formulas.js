@@ -249,6 +249,52 @@ export function extraerEstructuraDinamica(worksheet, estructura) {
     return estructuraDinamica;
 }
 
+// EN excel-formulas.js, agregar función:
+export function extraerEstructuraDinamicaConCodigos(worksheet, estructura, codigosVariables) {
+    const estructuraDinamica = [];
+    let columnaActual = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES;
+    
+    // Usar los códigos reales que vienen del back
+    const mapaCodigos = new Map();
+    
+    // Primero, mapear cada variable a sus posibles códigos
+    estructura.forEach(apartado => {
+        apartado.variables.forEach(nombreVariable => {
+            // Buscar qué códigos del back corresponden a esta variable
+            const codigosParaVariable = codigosVariables.filter(codigo => {
+                // Verificar si el nombre de la variable contiene el código
+                // Ej: "BIO01 29 DÍAS..." contiene "BIO01"
+                return nombreVariable.includes(codigo);
+            });
+            
+            estructuraDinamica.push({
+                columna: numeroALetra(columnaActual),
+                columnaNumero: columnaActual,
+                nombre: nombreVariable,
+                codigos: codigosParaVariable.length > 0 ? codigosParaVariable : null,
+                apartado: apartado.nombre,
+                fila: 3
+            });
+            
+            // Mapear cada código a su columna
+            codigosParaVariable.forEach(codigo => {
+                mapaCodigos.set(codigo, numeroALetra(columnaActual));
+            });
+            
+            columnaActual++;
+        });
+    });
+    
+    console.log("📊 Estructura dinámica CON códigos reales:");
+    estructuraDinamica.forEach(item => {
+        console.log(`  Col ${item.columna}: "${item.nombre}" →`, item.codigos);
+    });
+    
+    console.log("🗺️ Mapa códigos→columnas:", Object.fromEntries(mapaCodigos));
+    
+    return estructuraDinamica;
+}
+
 /**
  * Obtiene referencias de población desde un worksheet
  * @param {Object} worksheet - Objeto worksheet de ExcelJS
@@ -285,73 +331,6 @@ export function obtenerReferenciasPoblacion(worksheet) {
     console.log("📍 Referencias de población encontradas:", referencias);
     return referencias;
 }
-
-// ===============================
-// FUNCIONES DE CONSTRUCCIÓN DE FÓRMULAS
-// ===============================
-
-/**
- * Construye una fórmula literal de Excel para una variable específica
- * @param {string} nombreVariable - Nombre de la variable
- * @param {Object} referenciasPoblacion - Referencias de columnas de población
- * @param {Array} estructuraDinamica - Estructura dinámica de variables
- * @returns {string} Fórmula de Excel
- */
-// export function construirFormulaLiteral(nombreVariable, referenciasPoblacion, estructuraDinamica) {
-//     // 1. Obtener fórmulas literales para esta variable
-//     const formulasPosibles = FORMULAS_LITERALES[nombreVariable];
-
-//     if (!formulasPosibles || formulasPosibles.length === 0) {
-//         console.log(`${MENSAJES.SIN_FORMULAS} ${nombreVariable}`);
-//         return "=0";
-//     }
-
-//     // 2. Determinar qué tipo de población usar
-//     const tipoPoblacion = determinarTipoPoblacion(nombreVariable);
-//     const referenciaPoblacion = referenciasPoblacion[tipoPoblacion];
-
-//     if (!referenciaPoblacion) {
-//         console.log(`${MENSAJES.SIN_REFERENCIA_POBLACION} ${tipoPoblacion}`);
-//         return "=0";
-//     }
-
-//     // 3. Buscar una fórmula que funcione con las variables disponibles
-//     for (const formulaLiteral of formulasPosibles) {
-//         const variablesEnFormula = extraerVariablesDeFormula(formulaLiteral);
-
-//         // Verificar si todas las variables de esta fórmula existen
-//         const todasExisten = variablesEnFormula.every(varName => {
-//             // Si es parámetro de población, lo damos por válido
-//             if (varName.startsWith("POBLACION_")) {
-//                 return true;
-//             }
-
-//             // Buscar la variable en estructura dinámica
-//             return estructuraDinamica.some(item =>
-//                 item.codigos?.includes(varName) ||
-//                 item.nombre?.toUpperCase().includes(varName)
-//             );
-//         });
-
-//         if (todasExisten) {
-//             console.log(`✅ Fórmula seleccionada para ${nombreVariable}:`);
-
-//             // 4. Convertir fórmula literal a fórmula Excel con referencias
-//             const formulaExcel = convertirFormulaAExcel(
-//                 formulaLiteral,
-//                 referenciaPoblacion,
-//                 estructuraDinamica
-//             );
-
-//             console.log(`   Excel: ${formulaExcel}`);
-//             return formulaExcel;
-//         }
-//     }
-
-//     // 5. Si ninguna fórmula funciona, crear una simple
-//     console.log(`${MENSAJES.FORMULA_NO_FUNCIONA} ${nombreVariable}, usando fórmula simple`);
-//     return `=SI.ERROR(0/((${referenciaPoblacion}{FILA}*0.0833)*12),0)`;
-// }
 
 /**
  * Convierte una fórmula literal a fórmula Excel con referencias de columna
@@ -492,6 +471,115 @@ export function construirDatosParaExcel(resultadosConsulta, obtenerInicialesInst
     console.log(`📊 Construidos ${filas.length} registros para Excel`);
     return filas;
 }
+// EN excel-formulas.js, agregar:
+
+// EN excel-formulas.js, AGREGAR esta función:
+
+/**
+ * Aplica fórmulas a columnas fijas usando mapa completo de códigos
+ * @param {Object} worksheet - Worksheet de ExcelJS
+ * @param {Array} estructura - Estructura de apartados
+ * @param {number} filaInicioDatos - Fila donde empiezan los datos
+ * @param {Array} resultadosConsulta - Resultados de consulta
+ * @param {Array} estructuraDinamica - Estructura con códigos mapeados
+ * @param {Object} referenciasPoblacion - Referencias de columnas de población
+ * @returns {number} Columna donde empiezan las fijas
+ */
+export function aplicarFormulasColumnasFijasConMapa(
+    worksheet,
+    estructura,
+    filaInicioDatos,
+    resultadosConsulta,
+    estructuraDinamica,
+    referenciasPoblacion
+) {
+    try {
+        console.log("🔧 Iniciando aplicarFormulasColumnasFijasConMapa...");
+        
+        // 1. Calcular columna de inicio
+        let totalColumnasDinamicas = 0;
+        estructura.forEach(apartado => {
+            totalColumnasDinamicas += apartado.variables.length;
+        });
+        const columnaInicioFijas = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES + totalColumnasDinamicas;
+        
+        console.log(`📊 Columnas dinámicas: ${totalColumnasDinamicas}`);
+        console.log(`📍 Columnas fijas empiezan en: ${columnaInicioFijas}`);
+        
+        // 2. Crear mapa códigos → columnas
+        const mapaCodCol = new Map();
+        estructuraDinamica.forEach(item => {
+            if (item.codigos) {
+                item.codigos.forEach(codigo => {
+                    mapaCodCol.set(codigo, item.columna);
+                });
+            }
+        });
+        
+        console.log("🔗 Mapa códigos→columnas:", Object.fromEntries(mapaCodCol));
+        console.log("📍 Referencias población:", referenciasPoblacion);
+        
+        // 3. DEFINIR COLUMNAS FIJAS CON FÓRMULAS
+        const columnasFijasConfig = [
+            // 4 columnas de población (sin fórmulas)
+            { tipo: 'poblacion', nombre: 'POBLACIÓN <1 AÑO' },
+            { tipo: 'poblacion', nombre: 'POBLACIÓN 1 AÑO' },
+            { tipo: 'poblacion', nombre: 'POBLACIÓN 4 AÑO' },
+            { tipo: 'poblacion', nombre: 'POBLACIÓN 6 AÑO' },
+            
+            // Columnas de fórmulas de cobertura
+            { tipo: 'formula', nombre: '% BCG', formulaKey: '% BCG' },
+            { tipo: 'formula', nombre: '% Hepatitis B (<1 AÑO)', formulaKey: '% Hepatitis B (<1 AÑO)' },
+            { tipo: 'formula', nombre: '% Hexavalente (<1 AÑO)', formulaKey: '% Hexavalente (<1 AÑO)' },
+            { tipo: 'formula', nombre: '% Rotavirus RV1', formulaKey: '% Rotavirus RV1' },
+            { tipo: 'formula', nombre: '% Neumocócica conjugada (<1 AÑO)', formulaKey: '% Neumocócica conjugada (<1 AÑO)' },
+            { tipo: 'formula', nombre: '% Hexavalente (1 AÑO)', formulaKey: '% Hexavalente (1 AÑO)' },
+            { tipo: 'formula', nombre: '% Neumocócica conjugada (1 AÑO)', formulaKey: '% Neumocócica conjugada (1 AÑO)' },
+            { tipo: 'formula', nombre: '% SRP 1ra', formulaKey: '% SRP 1ra' },
+            { tipo: 'formula', nombre: '% SRP 2da', formulaKey: '% SRP 2da' },
+            { tipo: 'formula', nombre: '% ESQUEMA COMPLETO DE DPT EN 4 AÑOS', formulaKey: '% ESQUEMA COMPLETO DE DPT EN 4 AÑOS' },
+            { tipo: 'formula', nombre: '% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS', formulaKey: '% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS' }
+        ];
+        
+        // 4. APLICAR FÓRMULAS
+        for (let i = 0; i < columnasFijasConfig.length; i++) {
+            const config = columnasFijasConfig[i];
+            const columnaExcel = columnaInicioFijas + i;
+            
+            if (config.tipo === 'formula') {
+                // Aplicar fórmula para cada fila de datos
+                for (let fila = filaInicioDatos; fila < filaInicioDatos + resultadosConsulta.length; fila++) {
+                    try {
+                        const formulaExcel = obtenerFormulaExcel(
+                            config.formulaKey,
+                            referenciasPoblacion,
+                            estructuraDinamica
+                        ).replace(/{FILA}/g, fila);
+                        
+                        worksheet.getRow(fila).getCell(columnaExcel).value = {
+                            formula: formulaExcel.replace(/^=/, ''),
+                            result: 0
+                        };
+                        
+                        console.log(`📝 Fila ${fila}, Col ${columnaExcel}: ${formulaExcel}`);
+                        
+                    } catch (error) {
+                        console.warn(`⚠️ Error en fórmula ${config.formulaKey}, fila ${fila}:`, error.message);
+                        worksheet.getRow(fila).getCell(columnaExcel).value = 0;
+                    }
+                }
+            }
+        }
+        
+        console.log("✅ Fórmulas aplicadas exitosamente con mapa");
+        return columnaInicioFijas;
+        
+    } catch (error) {
+        console.error("❌ Error en aplicarFormulasColumnasFijasConMapa:", error);
+        throw error;
+    }
+}
+
 
 // ===============================
 // FUNCIÓN PARA CREAR ESTRUCTURA EXACTA DE IMAGEN 2
@@ -681,6 +769,7 @@ function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, columnaIn
 export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDatos = 5, resultadosConsulta, codigosVariables) {
     try {
         console.log("🔧 Iniciando aplicarFormulasColumnasFijas...");
+        console.log(`📊 Códigos variables recibidos:`, codigosVariables);
 
         // 1. Calcular columna de inicio para columnas fijas
         let totalColumnasDinamicas = 0;
@@ -691,7 +780,7 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
         console.log(`🔧 Columnas dinámicas: ${totalColumnasDinamicas}, Inicio columnas fijas: columna ${columnaInicioFijas}`);
 
         // 2. Extraer estructura dinámica y referencias
-        const estructuraDinamica = extraerEstructuraDinamica(worksheet, estructura);
+        const estructuraDinamica = extraerEstructuraDinamica(worksheet, estructura, codigosVariables);
         const referenciasPoblacion = obtenerReferenciasPoblacion(worksheet);
 
         // 3. VERIFICAR SI LAS COLUMNAS FIJAS YA EXISTEN
@@ -857,7 +946,24 @@ ancho: 10,
     }
 }
 
-
+// EN excel-formulas.js, agregar función:
+export function mapearCodigosAColumnas(codigosVariables, estructuraDinamica) {
+    const mapa = new Map();
+    
+    codigosVariables.forEach(codigo => {
+        const item = estructuraDinamica.find(it =>
+            it.codigos?.some(c => c.substring(0, 5) === codigo)
+        );
+        
+        if (item) {
+            mapa.set(codigo, item.columna);
+        } else {
+            console.warn(`⚠️ Código sin columna: ${codigo}`);
+        }
+    });
+    
+    return mapa;
+}
 // ===============================
 // FUNCIÓN PARA APLICAR FÓRMULAS
 // ===============================
@@ -1051,14 +1157,6 @@ function aplicarFormulasAColumnasFijasExistentes(worksheet, columnaInicioFijas, 
     for (let fila = filaInicioDatos; fila < filaInicioDatos + totalFilas; fila++) {
         // Ejemplo: Aplicar fórmula a la primera columna de cobertura
         const columnaCobertura = columnaInicioFijas + 4; // Después de las 4 de población
-
-        // Buscar qué fórmula corresponde a esta columna
-        // Esto dependerá de la estructura específica de tu Excel
-
-        // worksheet.getRow(fila).getCell(columnaCobertura).value = {
-        //     formula: `=SI(${colRef}POBLACIÓN=0,0,(COL_DINAMICA/${colRef}POBLACIÓN)*100)`,
-        //     result: null
-        // };
     }
 
     console.log(`✅ Fórmulas aplicadas a ${totalFilas} filas`);
@@ -1106,24 +1204,6 @@ export function aplicarFormulasPlantilla(
         console.error("❌ Error al aplicar fórmulas de plantilla:", error);
         throw error;
     }
-}
-
-/**
- * Aplica fórmulas específicas adicionales
- * @param {Object} worksheet - Worksheet de ExcelJS
- * @param {Object} resultado - Resultado de una CLUES
- * @param {number} fila - Fila actual
- * @param {Function} obtenerInicialesInstitucion - Función para obtener iniciales
- */
-function aplicarFormulasEspecificas(worksheet, resultado, fila, obtenerInicialesInstitucion) {
-    // Aquí puedes agregar fórmulas específicas adicionales si es necesario
-    // Por ejemplo:
-    // if (resultado.unidad?.entidad === "ENTIDAD_ESPECIFICA") {
-    //     worksheet.getCell(`Z${fila}`).value = {
-    //         formula: `=SI(A${fila}="VALOR", "SI", "NO")`,
-    //         result: null
-    //     };
-    // }
 }
 
 // ===============================

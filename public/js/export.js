@@ -13,7 +13,12 @@ import {
     construirFilaVariables,
     aplicarFormulasColumnasFijas,
     aplicarFormulasPlantilla,
-    construirFormulaDesdeVariables 
+    construirFormulaDesdeVariables,
+    extraerEstructuraDinamica,          // ← AGREGAR
+    obtenerReferenciasPoblacion,        // ← AGREGAR (¡ESTA FALTA!)
+    numeroALetra,                       // ← AGREGAR si es necesario
+    letraANumero,
+    aplicarFormulasColumnasFijasConMapa,
 } from './excel-formulas.js';
 
 // ===============================
@@ -165,9 +170,28 @@ export async function exportarTablaHTML(
         aplicarFormatoEncabezados(worksheet, estructura);
 
         const codigosVariables = extraerCodigosVariables(resultadosConsulta);
+        console.log(`🔍 Códigos extraídos del back:`, codigosVariables);
+        // const estructuraDinamica = extraerEstructuraDinamicaConCodigos(
+        //     worksheet,
+        //     estructura,
+        //     codigosVariables
+        // );
+        const estructuraDinamica = extraerEstructuraDinamica(worksheet, estructura);
+console.log("📊 Estructura dinámica extraída:", estructuraDinamica);
+
+        const referenciasPoblacion = obtenerReferenciasPoblacion(worksheet);
+
+        aplicarFormulasColumnasFijasConMapa(
+            worksheet,
+            estructura,
+            EXCEL_CONFIG.FILA_INICIO_DATOS,
+            resultadosConsulta,
+            estructuraDinamica,      // ← Estructura con códigos reales
+            referenciasPoblacion    // ← Referencias de población
+        );
 
         // 6. Agregar columnas fijas con fórmulas
-        aplicarFormulasColumnasFijas(worksheet, estructura, EXCEL_CONFIG.FILA_INICIO_DATOS, resultadosConsulta, codigosVariables );
+        aplicarFormulasColumnasFijas(worksheet, estructura, EXCEL_CONFIG.FILA_INICIO_DATOS, resultadosConsulta, codigosVariables);
 
         // 7. Ajustar anchos de columnas
         ajustarAnchosColumnas(worksheet, estructura);
