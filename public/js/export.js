@@ -1,23 +1,50 @@
 // export.js
 const ExcelJS = window.ExcelJS;
-import { 
-    EXCEL_CONFIG, 
-    COLORES, 
+import {
+    EXCEL_CONFIG,
+    COLORES,
     NOMBRES_ARCHIVOS,
     RUTAS,
     MENSAJES,
     CLASES_CSS
 } from './constants.js';
-import { 
-    construirDatosParaExcel, 
+import {
+    construirDatosParaExcel,
     construirFilaVariables,
     aplicarFormulasColumnasFijas,
-    aplicarFormulasPlantilla
+    aplicarFormulasPlantilla,
+    construirFormulaDesdeVariables 
 } from './excel-formulas.js';
 
 // ===============================
 // FUNCIONES DE EXPORTACIÓN PRINCIPALES
 // ===============================
+// export.js
+
+// ... (tus imports actuales)
+
+/**
+ * Extrae todos los códigos de variables (primeros 5 caracteres) desde los resultados
+ * @param {Array} resultadosConsulta - Resultados de la consulta
+ * @returns {Array<string>} Códigos únicos ej. ["BIO01", "VBC02", ...]
+ */
+function extraerCodigosVariables(resultadosConsulta) {
+    const codigos = new Set();
+
+    (resultadosConsulta || []).forEach(r => {
+        (r.biologicos || []).forEach(ap => {
+            (ap.grupos || []).forEach(g => {
+                (g.variables || []).forEach(v => {
+                    if (v.variable && v.variable.length >= 5) {
+                        codigos.add(v.variable.substring(0, 5));
+                    }
+                });
+            });
+        });
+    });
+
+    return Array.from(codigos);
+}
 
 /**
  * Exporta datos a Excel usando la plantilla CUBOS
@@ -27,9 +54,9 @@ import {
  * @param {Function} ocultarSpinner - Función para ocultar spinner
  */
 export async function exportarExcel(
-    resultadosConsulta, 
+    resultadosConsulta,
     obtenerInicialesInstitucion,
-    mostrarSpinner, 
+    mostrarSpinner,
     ocultarSpinner
 ) {
     try {
@@ -38,15 +65,15 @@ export async function exportarExcel(
         }
 
         const workbook = new ExcelJS.Workbook();
-        
+
         // Cargar plantilla
         console.log("📥 Cargando plantilla desde:", RUTAS.PLANTILLA_EXCEL);
         const response = await fetch(RUTAS.PLANTILLA_EXCEL);
-        
+
         if (!response.ok) {
             throw new Error(`No se pudo cargar la plantilla: ${response.status}`);
         }
-        
+
         const buffer = await response.arrayBuffer();
         await workbook.xlsx.load(buffer);
 
@@ -55,7 +82,7 @@ export async function exportarExcel(
 
         // Llenar datos en la plantilla
         console.log(`📝 Llenando ${resultadosConsulta.length} registros en la plantilla...`);
-        
+
         resultadosConsulta.forEach((r, index) => {
             const fila = filaInicio + index;
 
@@ -65,8 +92,8 @@ export async function exportarExcel(
             sheet.getCell(`C${fila}`).value = r.unidad?.entidad ?? "";
             sheet.getCell(`D${fila}`).value = r.unidad?.jurisdiccion ?? "";
             sheet.getCell(`E${fila}`).value = r.unidad?.municipio ?? "";
-            sheet.getCell(`F${fila}`).value = obtenerInicialesInstitucion 
-                ? obtenerInicialesInstitucion(r.unidad?.idinstitucion) 
+            sheet.getCell(`F${fila}`).value = obtenerInicialesInstitucion
+                ? obtenerInicialesInstitucion(r.unidad?.idinstitucion)
                 : "";
 
             // ======== VARIABLES ORDENADAS ========
@@ -107,9 +134,9 @@ export async function exportarExcel(
  * @param {Function} ocultarSpinner - Función para ocultar spinner
  */
 export async function exportarTablaHTML(
-    resultadosConsulta, 
+    resultadosConsulta,
     obtenerInicialesInstitucion,
-    mostrarSpinner, 
+    mostrarSpinner,
     ocultarSpinner
 ) {
     try {
@@ -123,7 +150,7 @@ export async function exportarTablaHTML(
 
         // 2. Obtener la estructura de apartados y variables
         const estructura = construirEstructuraEncabezados(resultadosConsulta);
-        
+
         if (estructura.length === 0) {
             throw new Error("No hay datos para exportar");
         }
@@ -137,8 +164,10 @@ export async function exportarTablaHTML(
         // 5. Aplicar formato a encabezados
         aplicarFormatoEncabezados(worksheet, estructura);
 
+        const codigosVariables = extraerCodigosVariables(resultadosConsulta);
+
         // 6. Agregar columnas fijas con fórmulas
-        aplicarFormulasColumnasFijas(worksheet, estructura, EXCEL_CONFIG.FILA_INICIO_DATOS, resultadosConsulta);
+        aplicarFormulasColumnasFijas(worksheet, estructura, EXCEL_CONFIG.FILA_INICIO_DATOS, resultadosConsulta, codigosVariables );
 
         // 7. Ajustar anchos de columnas
         ajustarAnchosColumnas(worksheet, estructura);
@@ -319,7 +348,7 @@ function agregarDatosResultados(worksheet, estructura, resultadosConsulta, obten
             r.unidad?.entidad || '',
             r.unidad?.jurisdiccion || '',
             r.unidad?.municipio || '',
-            obtenerInicialesInstitucion ? 
+            obtenerInicialesInstitucion ?
                 obtenerInicialesInstitucion(r.unidad?.idinstitucion) || '' : ''
         );
 
@@ -367,7 +396,7 @@ function agregarDatosResultados(worksheet, estructura, resultadosConsulta, obten
                 bottom: { style: 'thin' },
                 right: { style: 'thin' }
             },
-            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
 
             // Alinear números a la derecha para columnas de datos (G en adelante)
             if (colNumber > 6 && typeof cell.value === 'number') {
@@ -390,19 +419,19 @@ function aplicarFormatoEncabezados(worksheet, estructura) {
     // Formato para columnas A-F (todas combinadas)
     for (let col = 1; col <= 6; col++) {
         const cell = worksheet.getCell(1, col);
-        cell.font = { 
-            bold: true, 
-            size: 14, 
-            color: { argb: COLORES.TEXT_WHITE } 
+        cell.font = {
+            bold: true,
+            size: 14,
+            color: { argb: COLORES.TEXT_WHITE }
         };
         cell.fill = {
             type: 'pattern',
             pattern: 'solid',
             fgColor: { argb: COLORES.POBLACION }
         };
-        cell.alignment = { 
-            vertical: 'middle', 
-            horizontal: 'center' 
+        cell.alignment = {
+            vertical: 'middle',
+            horizontal: 'center'
         };
         cell.border = {
             top: { style: 'thin' },
@@ -422,8 +451,8 @@ function aplicarFormatoEncabezados(worksheet, estructura) {
 
         // Apartado (combinado en filas 1-2)
         const cellApartado = worksheet.getCell(1, colInicio);
-        cellApartado.font = { 
-            bold: true, 
+        cellApartado.font = {
+            bold: true,
             size: 12,
             color: { argb: COLORES.TEXT_BLACK }
         };
@@ -432,10 +461,10 @@ function aplicarFormatoEncabezados(worksheet, estructura) {
             pattern: 'solid',
             fgColor: { argb: color }
         };
-        cellApartado.alignment = { 
-            vertical: 'middle', 
-            horizontal: 'center', 
-            wrapText: true 
+        cellApartado.alignment = {
+            vertical: 'middle',
+            horizontal: 'center',
+            wrapText: true
         };
         cellApartado.border = {
             top: { style: 'thin' },
@@ -448,9 +477,9 @@ function aplicarFormatoEncabezados(worksheet, estructura) {
         for (let i = 0; i < numVariables; i++) {
             const cellVariable = worksheet.getCell(3, colInicio + i);
             const colorVariable = color.replace('FF', 'CC'); // Color más claro
-            
-            cellVariable.font = { 
-                bold: true, 
+
+            cellVariable.font = {
+                bold: true,
                 size: 10,
                 color: { argb: COLORES.TEXT_BLACK }
             };
@@ -459,10 +488,10 @@ function aplicarFormatoEncabezados(worksheet, estructura) {
                 pattern: 'solid',
                 fgColor: { argb: colorVariable }
             };
-            cellVariable.alignment = { 
-                vertical: 'middle', 
-                horizontal: 'center', 
-                wrapText: true 
+            cellVariable.alignment = {
+                vertical: 'middle',
+                horizontal: 'center',
+                wrapText: true
             };
             cellVariable.border = {
                 top: { style: 'thin' },
@@ -533,7 +562,7 @@ function ajustarAnchosColumnas(worksheet, estructura) {
  */
 async function descargarWorkbook(workbook, nombreArchivo) {
     console.log(`💾 Descargando archivo: ${nombreArchivo}`);
-    
+
     try {
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], {
@@ -544,15 +573,15 @@ async function descargarWorkbook(workbook, nombreArchivo) {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = nombreArchivo;
-        
+
         // Agregar al DOM, hacer click y remover
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Liberar objeto URL
         URL.revokeObjectURL(link.href);
-        
+
         console.log(`✅ Archivo ${nombreArchivo} descargado exitosamente`);
     } catch (error) {
         console.error('❌ Error al descargar workbook:', error);
@@ -583,16 +612,16 @@ export function validarDatosParaExportar(resultadosConsulta) {
     }
 
     resultado.totalRegistros = resultadosConsulta.length;
-    
+
     if (resultado.totalRegistros === 0) {
         resultado.mensaje = 'No hay registros para exportar';
         return resultado;
     }
 
     // Verificar que al menos un registro tenga datos de biológicos
-    resultado.tieneDatos = resultadosConsulta.some(r => 
-        r.biologicos && 
-        Array.isArray(r.biologicos) && 
+    resultado.tieneDatos = resultadosConsulta.some(r =>
+        r.biologicos &&
+        Array.isArray(r.biologicos) &&
         r.biologicos.length > 0
     );
 
@@ -603,7 +632,7 @@ export function validarDatosParaExportar(resultadosConsulta) {
 
     resultado.valido = true;
     resultado.mensaje = `Listo para exportar ${resultado.totalRegistros} registros`;
-    
+
     return resultado;
 }
 
@@ -669,14 +698,14 @@ export default {
     // Funciones principales
     exportarExcel,
     exportarTablaHTML,
-    
+
     // Funciones auxiliares
     construirEstructuraEncabezados,
-    
+
     // Funciones de validación
     validarDatosParaExportar,
     generarResumenExportacion,
-    
+
     // Re-exportar funciones de excel-formulas
     construirDatosParaExcel,
     construirFilaVariables

@@ -20,7 +20,7 @@ export const FORMULAS_LITERALES = {
     
     "% Hepatitis B (<1 AÑO)": [
         "IFERROR((VAC06) / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)",
-        "IFERROR((BIO083) / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)",
+        "IFERROR((BIO08) / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)",
     ],
     
     "% Hexavalente (<1 AÑO)": [
@@ -30,43 +30,49 @@ export const FORMULAS_LITERALES = {
     ],
     
     "% Rotavirus RV1": [
-        "IFERROR(BIO06 / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)",
-        "IFERROR(ROT01 / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)"
+        "IFERROR((BIO56) / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)",
+        "IFERROR((VAC14) / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)",
+        "IFERROR((VRV02 + VRV04) / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)"
     ],
     
     "% Neumocócica conjugada (<1 AÑO)": [
-        "IFERROR(BIO08 / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)",
-        "IFERROR(NEU01 / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)"
+        "IFERROR((BIO15) / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)",
+        "IFERROR((VAC18) / ((POBLACION_MENOR_1_AÑO * 0.0833) * 12), 0)"
     ],
     
     "% Hexavalente (1 AÑO)": [
-        "IFERROR(BIO09 / ((POBLACION_1_AÑO * 0.0833) * 12), 0)",
-        "IFERROR(VBC07 / ((POBLACION_1_AÑO * 0.0833) * 12), 0)"
+        "IFERROR((BIO06) / ((POBLACION_1_AÑO * 0.0833) * 12), 0)",
+        "IFERROR((VAC04) / ((POBLACION_1_AÑO * 0.0833) * 12), 0)",
+        "IFERROR((VAC70) / ((POBLACION_1_AÑO * 0.0833) * 12), 0)"
     ],
     
     "% Neumocócica conjugada (1 AÑO)": [
-        "IFERROR(BIO10 / ((POBLACION_1_AÑO * 0.0833) * 12), 0)",
-        "IFERROR(NEU02 / ((POBLACION_1_AÑO * 0.0833) * 12), 0)"
+        "IFERROR((BIO16)/ ((POBLACION_1_AÑO * 0.0833) * 12), 0)",
+        "IFERROR((VAC19) / ((POBLACION_1_AÑO * 0.0833) * 12), 0)"
     ],
     
     "% SRP 1ra": [
-        "IFERROR(BIO11 / ((POBLACION_1_AÑO * 0.0833) * 12), 0)",
-        "IFERROR(SRP01 / ((POBLACION_1_AÑO * 0.0833) * 12), 0)"
+        "IFERROR((BIO30) / ((POBLACION_1_AÑO * 0.0833) * 12), 0)",
+        "IFERROR((VAC23) / ((POBLACION_1_AÑO * 0.0833) * 12), 0)"
     ],
     
     "% SRP 2da": [
-        "IFERROR(BIO13 / ((POBLACION_1_AÑO * 0.0833) * 12), 0)",
-        "IFERROR(SRP03 / ((POBLACION_1_AÑO * 0.0833) * 12), 0)"
+        "IFERROR((BIO63) / ((POBLACION_1_AÑO * 0.0833) * 12), 0)",
+        "IFERROR((VAC25) / ((POBLACION_1_AÑO * 0.0833) * 12), 0)",
+        "IFERROR((VTV01) / ((POBLACION_1_AÑO * 0.0833) * 12), 0)"
     ],
     
     "% ESQUEMA COMPLETO DE DPT EN 4 AÑOS": [
-        "IFERROR((BIO14 + BIO15 + BIO16) / ((POBLACION_4_AÑOS * 0.0833) * 12), 0)",
-        "IFERROR((DPT01 + DPT02 + DPT03) / ((POBLACION_4_AÑOS * 0.0833) * 12), 0)"
+        "IFERROR((BIO55) / ((POBLACION_4_AÑOS * 0.0833) * 12), 0)",
+        "IFERROR((BIO90) / ((POBLACION_4_AÑOS * 0.0833) * 12), 0)",
+        "IFERROR((VAC12) / ((POBLACION_4_AÑOS * 0.0833) * 12), 0)"
     ],
     
     "% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS": [
-        "IFERROR(BIO17 / ((POBLACION_6_AÑOS * 0.0833) * 12), 0)",
-        "IFERROR(SRP04 / ((POBLACION_6_AÑOS * 0.0833) * 12), 0)"
+        "IFERROR((BIO64) / ((POBLACION_6_AÑOS * 0.0833) * 12), 0)",
+        "IFERROR((BIO98) / ((POBLACION_6_AÑOS * 0.0833) * 12), 0)",
+        "IFERROR((VAC24) / ((POBLACION_6_AÑOS * 0.0833) * 12), 0)",
+        "IFERROR((VAC81) / ((POBLACION_6_AÑOS * 0.0833) * 12), 0)"
     ]
 };
 
@@ -128,13 +134,45 @@ export const COLORES = {
 // ===============================
 
 export const PATRONES_CODIGOS = {
-    BCG: ["BIO01", "BIO50", "VBC02", "BVC01", "BVC02"],
-    HEPATITIS: ["BIO02", "BIO51", "VBC03", "BVC03", "HBV01", "HBV02"],
-    HEXAVALENTE: ["BIO03", "BIO04", "BIO05", "VBC04", "VBC05", "VBC06", "HEX01", "HEX02", "HEX03"],
-    ROTAVIRUS: ["BIO06", "BIO07", "ROT01", "ROT02"],
-    NEUMOCÓCICA: ["BIO08", "NEU01"],
-    SRP: ["BIO11", "BIO12", "BIO13", "BIO17", "SRP01", "SRP02", "SRP03", "SRP04"],
-    DPT: ["BIO14", "BIO15", "BIO16", "DPT01", "DPT02", "DPT03"]
+    BCG: ["BIO01", "BIO50", "VBC02"],
+    HEPATITIS: ["VAC06", "BIO08"],
+    HEXAVALENTE: ["BIO05", "VAC03", "VAC69", "BIO06", "VAC04", "VAC70"],
+    ROTAVIRUS: ["BIO56", "VAC14", "VRV02", "VRV04"],
+    NEUMOCÓCICA: ["BIO15", "VAC18", "BIO16", "VAC19"],
+    SRP: ["BIO30", "VAC23", "BIO63", "VAC25", "VTV01", "BIO64", "BIO98", "VAC24", "VAC81"],
+    DPT: ["BIO55", "BIO90", "VAC12"],
+    BIO01:["BIO01"],
+    BIO50:["BIO50"],
+    VBC02:["VBC02"],
+    VAC06:["VAC06"],
+    BIO08:["BIO08"],
+    BIO05:["BIO05"],
+    VAC03:["VAC03"],
+    VAC69:["VAC69"],
+    BIO06:["BIO06"],
+    VAC04:["VAC04"],
+    VAC70:["VAC70"],
+    BIO56:["BIO56"],
+    VAC14:["VAC14"],
+    VRV02:["VRV02"],
+    VRV04:["VRV04"],
+    BIO15:["BIO15"],
+    VAC18:["VAC18"],
+    BIO16:["BIO16"],
+    VAC19:["VAC19"],
+    BIO30:["BIO30"],
+    VAC23:["VAC23"],
+    BIO63:["BIO63"],
+    VAC25:["VAC25"],
+    VTV01:["VTV01"],
+    BIO64:["BIO64"],
+    BIO98:["BIO98"],
+    VAC24:["VAC24"],
+    VAC81:["VAC81"],
+    BIO55:["BIO55"],
+    BIO90:["BIO90"],
+    VAC12:["VAC12"]
+
 };
 
 // ===============================
@@ -360,10 +398,10 @@ export const MAPEO_POBLACION_POR_VARIABLE = {
     "<1 AÑO": "POBLACIÓN <1 AÑO",
     "MENORES DE 1": "POBLACIÓN <1 AÑO",
     "1 AÑO": "POBLACIÓN 1 AÑO",
-    "4 AÑOS": "POBLACIÓN 4 AÑO",
-    "4 AÑO": "POBLACIÓN 4 AÑO",
-    "6 AÑOS": "POBLACIÓN 6 AÑO",
-    "6 AÑO": "POBLACIÓN 6 AÑO"
+    "4 AÑOS": "POBLACIÓN 4 AÑOS",
+    "4 AÑO": "POBLACIÓN 4 AÑOS",
+    "6 AÑOS": "POBLACIÓN 6 AÑOS",
+    "6 AÑO": "POBLACIÓN 6 AÑOS"
 };
 
 // ===============================
@@ -390,7 +428,7 @@ export const MENSAJES = {
 
 export const REGEX = {
     // Para extraer variables de fórmulas
-    VARIABLES_FORMULA: /\b(BIO|VBC|BVC|HBV|HEX|ROT|NEU|SRP|DPT)\d{2,3}\b/gi,
+    VARIABLES_FORMULA: /\b(BIO|VBC|VAC|VRV|VTV)\d+\b/gi,
     
     // Para extraer parámetros de población
     PARAMETROS_POBLACION: /POBLACION_[A-Z_ÁÑÓ]+/g,
