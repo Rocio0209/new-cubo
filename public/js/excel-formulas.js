@@ -44,52 +44,141 @@ export function letraANumero(letra) {
 
 // excel-formulas.js
 
+// EN excel-formulas.js, REEMPLAZAR la función obtenerFormulaExcel:
+
 export function obtenerFormulaExcel(nombreVariable, referenciasPoblacion, estructuraDinamica) {
+    console.group(`🔍 DEBUG: obtenerFormulaExcel("${nombreVariable}")`);
+    console.log('Referencias población:', referenciasPoblacion);
+    console.log('Estructura dinámica (primeros 5):', estructuraDinamica.slice(0, 5).map(item => ({
+        columna: item.columna,
+        nombre: item.nombre,
+        codigos: item.codigos
+    })));
+    console.groupEnd();
+    
     const formulas = FORMULAS_LITERALES[nombreVariable];
+
     if (!formulas?.length) {
-        console.warn(`⚠️ No hay fórmulas definidas en FORMULAS_LITERALES para: ${nombreVariable}`);
+        console.warn(`⚠️ No hay fórmulas definidas para: ${nombreVariable}`);
         return '=0';
     }
 
-    let formulaExcel = formulas[0];   // tomamos la primera
+    console.log(`🔍 Buscando fórmula para "${nombreVariable}"`);
+    console.log(`📋 ${formulas.length} fórmulas disponibles`);
 
-    /* 1.  reemplazar parámetros de población  (ej. POBLACION_MENOR_1_AÑO) */
-    Object.entries(referenciasPoblacion).forEach(([key, col]) => {
-        const regex = new RegExp(`\\b${key}\\b`, 'g');
-        formulaExcel = formulaExcel.replace(regex, `${col}{FILA}`);
+    // 1. Crear mapa de códigos → columnas (primeros 5 caracteres)
+    const mapaCodCol = new Map();
+    estructuraDinamica.forEach(item => {
+        if (item.codigos && Array.isArray(item.codigos)) {
+            item.codigos.forEach(codigo => {
+                if (codigo && codigo.length >= 5) {
+                    const codigoCorto = codigo.substring(0, 5).toUpperCase();
+                    mapaCodCol.set(codigoCorto, item.columna);
+                }
+            });
+        }
     });
 
-    /* 2.  mapeo código → columna real (G, H, M…) */
-    const mapaCodCol = new Map(
-        estructuraDinamica.flatMap(it =>
-            (it.codigos || []).map(cod => [cod.substring(0, 5), it.columna])
-        )
-    );
+    console.log(`🗺️ Mapa con ${mapaCodCol.size} códigos disponibles`);
 
-    /* 3.  reemplazar códigos por columna+{FILA}  (orden largo→corto para evitar parciales) */
-    const codigosEnFormula = [
-        ...formulaExcel.matchAll(REGEX.VARIABLES_FORMULA)
-    ].map(m => m[0])
-     .filter(c => mapaCodCol.has(c))
-     .sort((a, b) => b.length - a.length);
+    // 2. Probar cada fórmula en orden (OR lógico)
+    for (let i = 0; i < formulas.length; i++) {
+        const formulaOriginal = formulas[i];
+        console.log(`\n🧪 Probando fórmula ${i + 1}/${formulas.length}: ${formulaOriginal}`);
 
-    codigosEnFormula.forEach(codigo => {
-    const item = estructuraDinamica.find(it =>
-        it.codigos?.some(c => c.substring(0, 5) === codigo)
-    );
+        // Extraer variables de esta fórmula
+        const variablesEnFormula = extraerVariablesDeFormula(formulaOriginal);
+        console.log(`📊 Variables en fórmula:`, variablesEnFormula);
 
-    if (item) {
-        const regex = new RegExp(`\\b${codigo}\\b`, 'g');
-        // 🔥 Aquí cambias: en lugar de `I{FILA}`, usas el valor real de la celda
-        formulaExcel = formulaExcel.replace(regex, `"${item.columna}{FILA}"`);
-    } else {
-        console.warn(`⚠️ No se encontró variable para el código: ${codigo}`);
+        // Verificar si TODAS las variables de esta fórmula existen
+        let todasExisten = true;
+        const reemplazos = {};
+        let formulaTemp = formulaOriginal;
+
+        for (const varName of variablesEnFormula) {
+            const varNameUpper = varName.toUpperCase();
+            
+            // 2a. Si es parámetro de población
+            if (varNameUpper.startsWith("POBLACION_")) {
+                // Buscar la referencia de población
+                let colPoblacion = null;
+                
+                // Intentar diferentes formatos de clave
+                const posiblesClaves = [
+                    varNameUpper, // "POBLACION_MENOR_1_AÑO"
+                    varNameUpper.replace(/_/g, ' '), // "POBLACION MENOR 1 AÑO"
+                    varNameUpper.replace('POBLACION_', 'POBLACIÓN '), // "POBLACIÓN MENOR_1_AÑO"
+                    // También buscar por tipo de población en constantes
+                    varNameUpper === "POBLACION_MENOR_1_AÑO" ? "POBLACIÓN <1 AÑO" : null,
+                    varNameUpper === "POBLACION_1_AÑO" ? "POBLACIÓN 1 AÑO" : null,
+                    varNameUpper === "POBLACION_4_AÑOS" ? "POBLACIÓN 4 AÑO" : null,
+                    varNameUpper === "POBLACION_6_AÑOS" ? "POBLACIÓN 6 AÑO" : null
+                ].filter(Boolean); // Eliminar nulls
+
+                for (const clave of posiblesClaves) {
+                    if (referenciasPoblacion[clave]) {
+                        colPoblacion = referenciasPoblacion[clave];
+                        console.log(`   ✅ ${varName} → ${colPoblacion}{FILA} (clave: ${clave})`);
+                        break;
+                    }
+                }
+
+                if (colPoblacion) {
+                    reemplazos[varName] = colPoblacion;
+                } else {
+                    console.log(`   ❌ ${varName} NO encontrada en referencias`);
+                    console.log(`   Claves disponibles:`, Object.keys(referenciasPoblacion));
+                    todasExisten = false;
+                    break;
+                }
+            }
+            // 2b. Si es variable BIO/VBC/etc.
+            else {
+                // Tomar primeros 5 caracteres del código
+                const codigoCorto = varNameUpper.substring(0, 5);
+                const columna = mapaCodCol.get(codigoCorto);
+                
+                if (columna) {
+                    reemplazos[varName] = columna;
+                    console.log(`   ✅ ${varName} (${codigoCorto}) → ${columna}{FILA}`);
+                } else {
+                    console.log(`   ❌ ${varName} (${codigoCorto}) NO encontrada`);
+                    console.log(`   Códigos disponibles:`, Array.from(mapaCodCol.keys()));
+                    todasExisten = false;
+                    break;
+                }
+            }
+        }
+
+        // 3. Si TODAS las variables existen, usar esta fórmula
+        if (todasExisten) {
+            console.log(`🎯 ¡Fórmula ${i + 1} ES VÁLIDA! Aplicando reemplazos...`);
+
+            // Aplicar reemplazos a la fórmula
+            let formulaFinal = formulaOriginal;
+            
+            // Reemplazar variables por referencias de columna
+            // Ordenar de más largo a más corto para evitar reemplazos parciales
+            const variablesOrdenadas = Object.keys(reemplazos)
+                .sort((a, b) => b.length - a.length);
+            
+            for (const varName of variablesOrdenadas) {
+                const regex = new RegExp(`\\b${varName}\\b`, 'gi');
+                formulaFinal = formulaFinal.replace(regex, `${reemplazos[varName]}{FILA}`);
+            }
+            
+            console.log(`📝 Fórmula procesada: =${formulaFinal}`);
+            console.log(`✅ Fórmula ${i + 1} seleccionada para "${nombreVariable}"`);
+            return `=${formulaFinal}`;
+        }
     }
-});
-console.log('🔧 fórmula final tras reemplazos:', '=' + formulaExcel);
-    return '=' + formulaExcel;
-}
 
+    // 4. Si ninguna fórmula funciona
+    console.warn(`⚠️ Ninguna de las ${formulas.length} fórmulas funciona para "${nombreVariable}"`);
+    console.log(`📍 Referencias población:`, Object.keys(referenciasPoblacion));
+    console.log(`📍 Códigos disponibles:`, Array.from(mapaCodCol.keys()));
+    return '=0';
+}
 
 /**
  * Construye una fórmula Excel válida a partir de los códigos de variables existentes
@@ -167,14 +256,36 @@ export function construirFormulaDesdeVariables(
  */
 export function extraerVariablesDeFormula(formula) {
     if (!formula) return [];
-
-    // Extraer variables como BIO01, VBC02, etc.
-    const matches = formula.match(REGEX.VARIABLES_FORMULA) || [];
-
-    // También extraer parámetros especiales de población
-    const parametrosPoblacion = formula.match(REGEX.PARAMETROS_POBLACION) || [];
-
-    return [...new Set([...matches, ...parametrosPoblacion])]; // Eliminar duplicados
+    
+    console.log(`🔍 Extrayendo variables de: "${formula}"`);
+    
+    // REGEX ESPECÍFICO para los 4 tipos de población que tienes
+    const regexPoblacion = /POBLACION_(MENOR_1_AÑO|1_AÑO|4_AÑOS|6_AÑOS)/gi;
+    
+    const matchesPoblacion = formula.match(regexPoblacion) || [];
+    console.log(`📍 Parámetros población encontrados:`, matchesPoblacion);
+    
+    // Extraer variables BIO/VBC
+    const regexVariables = /\b(BIO|VBC|VAC|VRV|VTV)\d{2,3}\b/gi;
+    const matchesVariables = formula.match(regexVariables) || [];
+    
+    // También extraer variables de 4-5 caracteres (por si acaso)
+    const regexVariablesCortas = /\b(BIO|VBC|VAC|VRV|VTV)\d{2}\b/gi;
+    const matchesVariablesCortas = formula.match(regexVariablesCortas) || [];
+    
+    // Combinar todas las variables
+    const todasVariables = [...matchesVariables, ...matchesVariablesCortas];
+    const variablesUnicas = [...new Set(todasVariables)];
+    
+    console.log(`📍 Variables BIO/VBC encontradas:`, variablesUnicas);
+    
+    // Combinar todo
+    const todas = [...matchesPoblacion, ...variablesUnicas];
+    const resultado = [...new Set(todas)];
+    
+    console.log(`✅ Extraídas ${resultado.length} variables:`, resultado);
+    
+    return resultado;
 }
 
 /**
@@ -253,10 +364,10 @@ export function extraerEstructuraDinamica(worksheet, estructura) {
 export function extraerEstructuraDinamicaConCodigos(worksheet, estructura, codigosVariables) {
     const estructuraDinamica = [];
     let columnaActual = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES;
-    
+
     // Usar los códigos reales que vienen del back
     const mapaCodigos = new Map();
-    
+
     // Primero, mapear cada variable a sus posibles códigos
     estructura.forEach(apartado => {
         apartado.variables.forEach(nombreVariable => {
@@ -266,7 +377,7 @@ export function extraerEstructuraDinamicaConCodigos(worksheet, estructura, codig
                 // Ej: "BIO01 29 DÍAS..." contiene "BIO01"
                 return nombreVariable.includes(codigo);
             });
-            
+
             estructuraDinamica.push({
                 columna: numeroALetra(columnaActual),
                 columnaNumero: columnaActual,
@@ -275,23 +386,23 @@ export function extraerEstructuraDinamicaConCodigos(worksheet, estructura, codig
                 apartado: apartado.nombre,
                 fila: 3
             });
-            
+
             // Mapear cada código a su columna
             codigosParaVariable.forEach(codigo => {
                 mapaCodigos.set(codigo, numeroALetra(columnaActual));
             });
-            
+
             columnaActual++;
         });
     });
-    
+
     console.log("📊 Estructura dinámica CON códigos reales:");
     estructuraDinamica.forEach(item => {
         console.log(`  Col ${item.columna}: "${item.nombre}" →`, item.codigos);
     });
-    
+
     console.log("🗺️ Mapa códigos→columnas:", Object.fromEntries(mapaCodigos));
-    
+
     return estructuraDinamica;
 }
 
@@ -302,33 +413,73 @@ export function extraerEstructuraDinamicaConCodigos(worksheet, estructura, codig
  */
 export function obtenerReferenciasPoblacion(worksheet) {
     const referencias = {};
-    const totalColumnas = worksheet.columnCount;
 
-    // Buscar en las 4 filas de encabezado
+    // Buscar en las primeras 4 filas (encabezados combinados)
     for (let fila = 1; fila <= 4; fila++) {
-        for (let col = 1; col <= totalColumnas; col++) {
-            const cell = worksheet.getRow(fila).getCell(col);
-            const valor = cell.value?.toString() || "";
+        const row = worksheet.getRow(fila);
 
-            if (valor.includes("POBLACIÓN") || valor.includes("POBLACION")) {
-                // Convertir columna a letra
-                const letraColumna = numeroALetra(col);
+        // Buscar en las primeras 20 columnas (ajusta según necesidad)
+        for (let col = 1; col <= 20; col++) {
+            try {
+                const cell = row.getCell(col);
+                const valor = cell.value?.toString() || "";
 
-                // Identificar qué tipo de población es
-                if (valor.includes("<1 AÑO") || valor.includes("MENOR DE 1") || valor.includes("MENORES DE 1")) {
-                    referencias[TIPOS_POBLACION.MENOR_1_AÑO] = letraColumna;
-                } else if (valor.includes("1 AÑO")) {
-                    referencias[TIPOS_POBLACION.UN_AÑO] = letraColumna;
-                } else if (valor.includes("4 AÑOS")) {
-                    referencias[TIPOS_POBLACION.CUATRO_AÑOS] = letraColumna;
-                } else if (valor.includes("6 AÑOS")) {
-                    referencias[TIPOS_POBLACION.SEIS_AÑOS] = letraColumna;
+                console.log(`🔍 Fila ${fila}, Col ${col}: "${valor}"`);
+
+                if (valor.includes("POBLACIÓN") || valor.includes("POBLACION")) {
+                    const letraColumna = numeroALetra(col);
+
+                    // DEBUG: Ver qué está encontrando exactamente
+                    console.log(`📍 Encontrado "${valor}" en columna ${letraColumna}`);
+
+                    // Mapear según lo que encuentre
+                    if (valor.includes("<1 AÑO") || valor.includes("MENOR DE 1")) {
+                        referencias["POBLACIÓN <1 AÑO"] = letraColumna;
+                        referencias["POBLACION_MENOR_1_AÑO"] = letraColumna; // ← AGREGAR ESTA LÍNEA
+                    } else if (valor.includes("1 AÑO")) {
+                        referencias["POBLACIÓN 1 AÑO"] = letraColumna;
+                        referencias["POBLACION_1_AÑO"] = letraColumna; // ← AGREGAR ESTA LÍNEA
+                    } else if (valor.includes("4 AÑOS") || valor.includes("4 AÑO")) {
+                        referencias["POBLACIÓN 4 AÑO"] = letraColumna;
+                        referencias["POBLACION_4_AÑOS"] = letraColumna; // ← AGREGAR ESTA LÍNEA
+                    } else if (valor.includes("6 AÑOS") || valor.includes("6 AÑO")) {
+                        referencias["POBLACIÓN 6 AÑO"] = letraColumna;
+                        referencias["POBLACION_6_AÑOS"] = letraColumna; // ← AGREGAR ESTA LÍNEA
+                    }
                 }
+            } catch (e) {
+                // Ignorar celdas fuera de rango
             }
         }
     }
 
-    console.log("📍 Referencias de población encontradas:", referencias);
+    // SI NO ENCUENTRA NADA, buscar en columnas específicas (backup)
+    if (Object.keys(referencias).length === 0) {
+        console.warn("⚠️ No encontró población en encabezados, buscando en columnas fijas...");
+
+        // Las columnas de población suelen estar después de las variables dinámicas
+        // Supongamos que están en columnas 160-163 (ajusta según tu caso)
+        const columnasPoblacion = [
+            { col: 160, nombre: "POBLACIÓN <1 AÑO", clave: "POBLACION_MENOR_1_AÑO" },
+            { col: 161, nombre: "POBLACIÓN 1 AÑO", clave: "POBLACION_1_AÑO" },
+            { col: 162, nombre: "POBLACIÓN 4 AÑO", clave: "POBLACION_4_AÑOS" },
+            { col: 163, nombre: "POBLACIÓN 6 AÑO", clave: "POBLACION_6_AÑOS" }
+        ];
+
+        columnasPoblacion.forEach(item => {
+            try {
+                const cell = worksheet.getRow(1).getCell(item.col);
+                const letraColumna = numeroALetra(item.col);
+                referencias[item.nombre] = letraColumna;
+                referencias[item.clave] = letraColumna;
+                console.log(`📍 Asignando ${item.clave} → ${letraColumna} (columna ${item.col})`);
+            } catch (e) {
+                console.warn(`No se pudo acceder a columna ${item.col}:`, e.message);
+            }
+        });
+    }
+
+    console.log("📍 Referencias de población FINALES:", referencias);
     return referencias;
 }
 
@@ -495,17 +646,17 @@ export function aplicarFormulasColumnasFijasConMapa(
 ) {
     try {
         console.log("🔧 Iniciando aplicarFormulasColumnasFijasConMapa...");
-        
+
         // 1. Calcular columna de inicio
         let totalColumnasDinamicas = 0;
         estructura.forEach(apartado => {
             totalColumnasDinamicas += apartado.variables.length;
         });
         const columnaInicioFijas = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES + totalColumnasDinamicas;
-        
+
         console.log(`📊 Columnas dinámicas: ${totalColumnasDinamicas}`);
         console.log(`📍 Columnas fijas empiezan en: ${columnaInicioFijas}`);
-        
+
         // 2. Crear mapa códigos → columnas
         const mapaCodCol = new Map();
         estructuraDinamica.forEach(item => {
@@ -515,10 +666,10 @@ export function aplicarFormulasColumnasFijasConMapa(
                 });
             }
         });
-        
+
         console.log("🔗 Mapa códigos→columnas:", Object.fromEntries(mapaCodCol));
         console.log("📍 Referencias población:", referenciasPoblacion);
-        
+
         // 3. DEFINIR COLUMNAS FIJAS CON FÓRMULAS
         const columnasFijasConfig = [
             // 4 columnas de población (sin fórmulas)
@@ -526,7 +677,7 @@ export function aplicarFormulasColumnasFijasConMapa(
             { tipo: 'poblacion', nombre: 'POBLACIÓN 1 AÑO' },
             { tipo: 'poblacion', nombre: 'POBLACIÓN 4 AÑO' },
             { tipo: 'poblacion', nombre: 'POBLACIÓN 6 AÑO' },
-            
+
             // Columnas de fórmulas de cobertura
             { tipo: 'formula', nombre: '% BCG', formulaKey: '% BCG' },
             { tipo: 'formula', nombre: '% Hepatitis B (<1 AÑO)', formulaKey: '% Hepatitis B (<1 AÑO)' },
@@ -540,12 +691,12 @@ export function aplicarFormulasColumnasFijasConMapa(
             { tipo: 'formula', nombre: '% ESQUEMA COMPLETO DE DPT EN 4 AÑOS', formulaKey: '% ESQUEMA COMPLETO DE DPT EN 4 AÑOS' },
             { tipo: 'formula', nombre: '% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS', formulaKey: '% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS' }
         ];
-        
+
         // 4. APLICAR FÓRMULAS
         for (let i = 0; i < columnasFijasConfig.length; i++) {
             const config = columnasFijasConfig[i];
             const columnaExcel = columnaInicioFijas + i;
-            
+
             if (config.tipo === 'formula') {
                 // Aplicar fórmula para cada fila de datos
                 for (let fila = filaInicioDatos; fila < filaInicioDatos + resultadosConsulta.length; fila++) {
@@ -555,14 +706,14 @@ export function aplicarFormulasColumnasFijasConMapa(
                             referenciasPoblacion,
                             estructuraDinamica
                         ).replace(/{FILA}/g, fila);
-                        
+
                         worksheet.getRow(fila).getCell(columnaExcel).value = {
                             formula: formulaExcel.replace(/^=/, ''),
                             result: 0
                         };
-                        
+
                         console.log(`📝 Fila ${fila}, Col ${columnaExcel}: ${formulaExcel}`);
-                        
+
                     } catch (error) {
                         console.warn(`⚠️ Error en fórmula ${config.formulaKey}, fila ${fila}:`, error.message);
                         worksheet.getRow(fila).getCell(columnaExcel).value = 0;
@@ -570,10 +721,10 @@ export function aplicarFormulasColumnasFijasConMapa(
                 }
             }
         }
-        
+
         console.log("✅ Fórmulas aplicadas exitosamente con mapa");
         return columnaInicioFijas;
-        
+
     } catch (error) {
         console.error("❌ Error en aplicarFormulasColumnasFijasConMapa:", error);
         throw error;
@@ -780,7 +931,7 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
         console.log(`🔧 Columnas dinámicas: ${totalColumnasDinamicas}, Inicio columnas fijas: columna ${columnaInicioFijas}`);
 
         // 2. Extraer estructura dinámica y referencias
-        const estructuraDinamica = extraerEstructuraDinamica(worksheet, estructura, codigosVariables);
+        const estructuraDinamica = extraerEstructuraDinamicaConCodigos(worksheet, estructura, codigosVariables);
         const referenciasPoblacion = obtenerReferenciasPoblacion(worksheet);
 
         // 3. VERIFICAR SI LAS COLUMNAS FIJAS YA EXISTEN
@@ -897,7 +1048,7 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
                                 {
                                     nombre: "% SRP 2da",
                                     formula: obtenerFormulaExcel("% SRP 2da", referenciasPoblacion, estructuraDinamica),
-ancho: 10,
+                                    ancho: 10,
                                     color: '9933ff'
                                 }
                             ]
@@ -949,19 +1100,19 @@ ancho: 10,
 // EN excel-formulas.js, agregar función:
 export function mapearCodigosAColumnas(codigosVariables, estructuraDinamica) {
     const mapa = new Map();
-    
+
     codigosVariables.forEach(codigo => {
         const item = estructuraDinamica.find(it =>
             it.codigos?.some(c => c.substring(0, 5) === codigo)
         );
-        
+
         if (item) {
             mapa.set(codigo, item.columna);
         } else {
             console.warn(`⚠️ Código sin columna: ${codigo}`);
         }
     });
-    
+
     return mapa;
 }
 // ===============================
@@ -1351,7 +1502,7 @@ export function generarReporteDepuracion(estructuraDinamica, referenciasPoblacio
             reporte.problemas.push(`No hay fórmulas para: ${nombreVariable}`);
         }
     });
-console.log('🔧 obtenerFormulaExcel ejecutada con', nombreVariable, formulaExcel);
+    console.log('🔧 obtenerFormulaExcel ejecutada con', nombreVariable, formulaExcel);
     // Verificar referencias de población
     Object.entries(TIPOS_POBLACION).forEach(([key, tipo]) => {
         if (!referenciasPoblacion[tipo]) {

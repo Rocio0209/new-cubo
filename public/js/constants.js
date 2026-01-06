@@ -430,8 +430,10 @@ export const REGEX = {
     // Para extraer variables de fórmulas
     VARIABLES_FORMULA: /\b(BIO|VBC|VAC|VRV|VTV)\d+\b/gi,
     
-    // Para extraer parámetros de población
-    PARAMETROS_POBLACION: /POBLACION_[A-Z_ÁÑÓ]+/g,
+    // Para extraer parámetros de población (¡CORREGIDO!)
+    PARAMETROS_POBLACION: /POBLACION_[A-Z_ÁÉÍÓÚÑ_]+/g,
+    // O mejor aún:
+    // PARAMETROS_POBLACION: /POBLACION_[A-ZÁÉÍÓÚÑ_]+(?:_[A-ZÁÉÍÓÚÑ_]+)*/g,
     
     // Para reemplazar marcadores de fila en fórmulas
     MARCADOR_FILA: /@/g,
