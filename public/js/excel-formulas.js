@@ -752,154 +752,221 @@ export function aplicarFormulasColumnasFijasConMapa(
 // FUNCIÓN PARA CREAR ESTRUCTURA EXACTA DE IMAGEN 2
 // ===============================
 
-function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, columnaInicioFijas, filaInicioDatos, resultadosConsulta, codigosVariables) {
+export function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, columnaInicioFijas, filaInicioDatos, resultadosConsulta, codigosVariables) {
+    console.group("🛠️ Creando estructura EXACTA de imagen 2...");
+    
     let columnaActual = columnaInicioFijas;
 
-    console.log("🛠️ Creando estructura exacta de imagen 2...");
-
-    // PRIMERO: Crear las 4 columnas de población
+    // ========== 1. CREAR LAS 4 COLUMNAS DE POBLACIÓN ==========
+    console.log("📌 Creando 4 columnas de población...");
     for (let i = 0; i < 4; i++) {
-        const columna = columnasFijas[i];
+        const columnaConfig = columnasFijas[i];
         const colExcel = columnaActual + i;
 
-        // Fila 1: Nombre de la población
-        worksheet.getRow(1).getCell(colExcel).value = columna.nombre;
+        // Nombre en fila 1
+        worksheet.getRow(1).getCell(colExcel).value = columnaConfig.nombre;
 
         // Combinar verticalmente filas 1-4
         worksheet.mergeCells(1, colExcel, 4, colExcel);
 
         // Aplicar formato
         const cell = worksheet.getRow(1).getCell(colExcel);
-        cell.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
+        cell.font = { 
+            bold: true, 
+            size: 11, 
+            color: { argb: COLORES.TEXT_WHITE }
+        };
         cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: columna.color }
+            fgColor: { argb: columnaConfig.color }
         };
-        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        cell.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'center', 
+            wrapText: true 
+        };
+        cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
 
         // Ajustar ancho
-        worksheet.getColumn(colExcel).width = columna.ancho;
+        worksheet.getColumn(colExcel).width = columnaConfig.ancho;
 
-        console.log(`📌 Columna población ${i + 1}: "${columna.nombre}" en columna ${colExcel}`);
+        console.log(`  ✅ Población ${i + 1}: "${columnaConfig.nombre}" en col ${colExcel}`);
     }
 
     columnaActual += 4;
 
-    // SEGUNDO: Crear el GRAN GRUPO "COBERTURA PVU"
-    const grupoCobertura = columnasFijas[4];
-    let totalVariablesCobertura = 0;
+    // ========== 2. CREAR EL GRUPO "COBERTURA PVU" ==========
+    const grupoCobertura = columnasFijas[4]; // El grupo COBERTURA PVU
+    console.log(`📌 Creando grupo: "${grupoCobertura.nombre}"`);
 
-    // Contar total de variables en COBERTURA PVU
+    // Calcular cuántas columnas ocupa COBERTURA PVU
+    let totalVariablesCobertura = 0;
     grupoCobertura.subgrupos.forEach(subgrupo => {
         totalVariablesCobertura += subgrupo.variables.length;
     });
 
     const columnaFinCobertura = columnaActual + totalVariablesCobertura - 1;
 
-    // 1. TÍTULO "COBERTURA PVU" en fila 1 (combinar todas las columnas del grupo)
+    // 2.1 TÍTULO PRINCIPAL "COBERTURA PVU" (fila 1, combinando todas las columnas)
     worksheet.mergeCells(1, columnaActual, 1, columnaFinCobertura);
     const tituloCell = worksheet.getRow(1).getCell(columnaActual);
-    tituloCell.value = "COBERTURA PVU";
-    tituloCell.font = { bold: true, size: 14, color: { argb: 'FF000000' } };
+    tituloCell.value = grupoCobertura.nombre;
+    tituloCell.font = { 
+        bold: true, 
+        size: 14, 
+        color: { argb: COLORES.TEXT_BLACK }
+    };
     tituloCell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'fef2cb' }
+        fgColor: { argb: grupoCobertura.color }
     };
-    tituloCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    tituloCell.alignment = { 
+        vertical: 'middle', 
+        horizontal: 'center' 
+    };
+    tituloCell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+    };
 
-    console.log(`📌 Título "COBERTURA PVU" en columnas ${columnaActual} a ${columnaFinCobertura}`);
+    console.log(`📌 Título "${grupoCobertura.nombre}" en columnas ${columnaActual} a ${columnaFinCobertura}`);
 
-    // 2. Crear cada subgrupo dentro de COBERTURA PVU
-    let columnaOffset = 0;
+    // 2.2 CREAR SUBGRUPOS DENTRO DE COBERTURA PVU
+    let subgrupoOffset = 0;
     let subgrupoInicio = columnaActual;
 
     grupoCobertura.subgrupos.forEach((subgrupo, subIndex) => {
         const subgrupoColumnas = subgrupo.variables.length;
         const subgrupoFin = subgrupoInicio + subgrupoColumnas - 1;
 
-        // PARA SUBGRUPOS CON NOMBRE (primeros dos subgrupos)
-        if (subgrupo.tipo === 'subgrupo' && subgrupo.nombre.trim() !== "") {
-            // Nombre del subgrupo en fila 2 (combinar columnas del subgrupo)
+        // 2.2.1 SUBGRUPOS CON NOMBRE (como "ESQUEMAS POR BIOLÓGICO PARA MENORES DE 1 AÑO")
+        if (subgrupo.nombre && subgrupo.nombre.trim() !== "") {
+            console.log(`📌 Subgrupo "${subgrupo.nombre}" en columnas ${subgrupoInicio} a ${subgrupoFin}`);
+
+            // Nombre del subgrupo en FILA 2 (combinando las columnas del subgrupo)
             worksheet.mergeCells(2, subgrupoInicio, 2, subgrupoFin);
             const subgrupoCell = worksheet.getRow(2).getCell(subgrupoInicio);
             subgrupoCell.value = subgrupo.nombre;
-            subgrupoCell.font = { bold: true, size: 11, color: { argb: 'FF000000' } };
+            subgrupoCell.font = { 
+                bold: true, 
+                size: 11, 
+                color: { argb: COLORES.TEXT_BLACK }
+            };
             subgrupoCell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
                 fgColor: { argb: subgrupo.color }
             };
-            subgrupoCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            subgrupoCell.alignment = { 
+                vertical: 'middle', 
+                horizontal: 'center', 
+                wrapText: true 
+            };
+            subgrupoCell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
 
-            console.log(`📌 Subgrupo "${subgrupo.nombre}" en columnas ${subgrupoInicio} a ${subgrupoFin}`);
-
-            // Variables del subgrupo en fila 3
+            // 2.2.2 VARIABLES DENTRO DEL SUBGRUPO en FILA 3
             subgrupo.variables.forEach((variable, varIndex) => {
                 const colVariable = subgrupoInicio + varIndex;
-                worksheet.getRow(3).getCell(colVariable).value = variable.nombre;
-
-                // Aplicar formato a variable
+                
+                // Nombre de la variable en FILA 3
                 const varCell = worksheet.getRow(3).getCell(colVariable);
-                varCell.font = { bold: true, size: 10, color: { argb: 'FF000000' } };
+                varCell.value = variable.nombre;
+                varCell.font = { 
+                    bold: true, 
+                    size: 10, 
+                    color: { argb: COLORES.TEXT_BLACK }
+                };
                 varCell.fill = {
                     type: 'pattern',
                     pattern: 'solid',
                     fgColor: { argb: variable.color }
                 };
-                varCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+                varCell.alignment = { 
+                    vertical: 'middle', 
+                    horizontal: 'center', 
+                    wrapText: true 
+                };
+                varCell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
 
-                // Combinar fila 3 con fila 4 para cada variable
+                // Combinar FILA 3 con FILA 4 para cada variable
                 worksheet.mergeCells(3, colVariable, 4, colVariable);
 
                 // Ajustar ancho
                 worksheet.getColumn(colVariable).width = variable.ancho;
 
-                console.log(`  📊 Variable: "${variable.nombre}" en columna ${colVariable}`);
+                console.log(`  📊 Variable: "${variable.nombre}" en col ${colVariable}`);
             });
 
-            // Fila 4 vacía (ya combinada con fila 3)
-
         }
-        // PARA VARIABLES FINALES SIN SUBGRUPO (DPT y SRP)
-        else if (subgrupo.tipo === 'variables_finales') {
+        // 2.2.3 VARIABLES FINALES SIN SUBGRUPO (DPT y SRP)
+        else if (subgrupo.variables.length > 0) {
             console.log(`📌 Variables finales sin subgrupo en columnas ${subgrupoInicio} a ${subgrupoFin}`);
 
-            // Variables DPT y SRP van DIRECTAMENTE en fila 2 (sin fila de subgrupo)
+            // Variables DPT y SRP van DIRECTAMENTE en FILA 2 (sin subgrupo)
             subgrupo.variables.forEach((variable, varIndex) => {
                 const colVariable = subgrupoInicio + varIndex;
-
-                // Variable en fila 2
-                worksheet.getRow(2).getCell(colVariable).value = variable.nombre;
-
-                // Aplicar formato
+                
+                // Nombre de la variable en FILA 2
                 const varCell = worksheet.getRow(2).getCell(colVariable);
-                varCell.font = { bold: true, size: 10, color: { argb: 'FF000000' } };
+                varCell.value = variable.nombre;
+                varCell.font = { 
+                    bold: true, 
+                    size: 10, 
+                    color: { argb: COLORES.TEXT_BLACK }
+                };
                 varCell.fill = {
                     type: 'pattern',
                     pattern: 'solid',
                     fgColor: { argb: variable.color }
                 };
-                varCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+                varCell.alignment = { 
+                    vertical: 'middle', 
+                    horizontal: 'center', 
+                    wrapText: true 
+                };
+                varCell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
 
-                // Combinar filas 2-4 para estas variables
+                // Combinar FILAS 2-4 para estas variables
                 worksheet.mergeCells(2, colVariable, 4, colVariable);
 
                 // Ajustar ancho
                 worksheet.getColumn(colVariable).width = variable.ancho;
 
-                console.log(`  📊 Variable final: "${variable.nombre}" en columna ${colVariable} (combinada filas 2-4)`);
+                console.log(`  📊 Variable final: "${variable.nombre}" en col ${colVariable} (combinada filas 2-4)`);
             });
-
-            // Para variables finales, fila 3 ya está combinada con fila 2, no hacer nada más
         }
 
         // Actualizar posición para siguiente subgrupo
         subgrupoInicio += subgrupoColumnas;
+        subgrupoOffset += subgrupoColumnas;
     });
 
-    // 3. Aplicar bordes y formato general
+    // ========== 3. APLICAR BORDES A TODAS LAS CELDAS ==========
+    console.log("📌 Aplicando bordes a todas las celdas de columnas fijas...");
     for (let col = columnaInicioFijas; col <= columnaFinCobertura; col++) {
         for (let row = 1; row <= 4; row++) {
             const cell = worksheet.getRow(row).getCell(col);
@@ -914,13 +981,14 @@ function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, columnaIn
         }
     }
 
-    // 4. Ajustar alturas de filas
+    // ========== 4. AJUSTAR ALTURAS DE FILAS ==========
     worksheet.getRow(1).height = 25;
     worksheet.getRow(2).height = 25;
     worksheet.getRow(3).height = 60;
     worksheet.getRow(4).height = 60;
 
     console.log("✅ Estructura de imagen 2 creada exitosamente");
+    console.groupEnd();
 }
 // ===============================
 // FUNCIONES DE APLICACIÓN DE FÓRMULAS EN EXCEL
@@ -1541,6 +1609,7 @@ export default {
     extraerVariablesDeFormula,
     extraerCodigosDeVariable,
     determinarTipoPoblacion,
+    crearColumnasFijasEstructuraImagen2,
 
     // Funciones de estructura dinámica
     extraerEstructuraDinamica,

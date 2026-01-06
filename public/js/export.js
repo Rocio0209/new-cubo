@@ -10,6 +10,7 @@ import {
 } from './constants.js';
 import {
     construirDatosParaExcel,
+    crearColumnasFijasEstructuraImagen2,
     construirFilaVariables,
     aplicarFormulasColumnasFijas,
     aplicarFormulasPlantilla,
@@ -148,7 +149,7 @@ export async function exportarTablaHTML(
     ocultarSpinner
 ) {
     console.group("🚀 INICIO exportarTablaHTML");
-    
+
     try {
         if (typeof mostrarSpinner === 'function') {
             mostrarSpinner();
@@ -157,12 +158,11 @@ export async function exportarTablaHTML(
         // DIAGNÓSTICO 1: Verificar datos de entrada
         console.group("🔍 DIAGNÓSTICO DATOS ENTRADA");
         console.log("📊 Total resultados consulta:", resultadosConsulta?.length || 0);
-        
+
         if (resultadosConsulta && resultadosConsulta.length > 0) {
             const primerRegistro = resultadosConsulta[0];
             console.log("📋 Primer registro - CLUES:", primerRegistro.clues);
             console.log("📋 Primer registro - Biologicos:", primerRegistro.biologicos?.length || 0);
-            
             if (primerRegistro.biologicos) {
                 primerRegistro.biologicos.forEach((bio, i) => {
                     console.log(`📋 Apartado ${i}: "${bio.apartado}"`);
@@ -182,7 +182,7 @@ export async function exportarTablaHTML(
         const estructura = construirEstructuraEncabezados(resultadosConsulta);
         console.log("📋 Estructura obtenida:", estructura);
         console.log("📊 Total apartados:", estructura.length);
-        
+
         estructura.forEach((apartado, idx) => {
             console.log(`  Apartado ${idx}: "${apartado.nombre}"`);
             console.log(`  Variables (${apartado.variables.length}):`, apartado.variables.slice(0, 3));
@@ -211,20 +211,43 @@ export async function exportarTablaHTML(
         // 5. Aplicar formato a encabezados
         console.group("🔍 APLICANDO FORMATO");
         aplicarFormatoEncabezados(worksheet, estructura);
-        console.log("✅ Formato aplicado");
-        console.groupEnd();
-
-        // DIAGNÓSTICO 2: Verificar códigos y estructura
         console.group("🔍 DIAGNÓSTICO CÓDIGOS");
         const codigosVariables = extraerCodigosVariables(resultadosConsulta);
         console.log(`📋 Códigos extraídos del back (${codigosVariables.length}):`, codigosVariables);
+        console.groupEnd();
+
+        // 5.5 CREAR COLUMNAS FIJAS CON ENCABEZADOS (¡NUEVA SECCIÓN!)
+        console.group("🔍 CREANDO COLUMNAS FIJAS CON ENCABEZADOS");
+
+        // Calcular dónde empiezan las columnas fijas
+        let totalColumnasDinamicas = 0;
+        estructura.forEach(apartado => {
+            totalColumnasDinamicas += apartado.variables.length;
+        });
+        const columnaInicioFijas = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES + totalColumnasDinamicas;
+
+        console.log(`📍 Columnas dinámicas: ${totalColumnasDinamicas}`);
+        console.log(`📍 Columnas fijas empiezan en: ${columnaInicioFijas} (${numeroALetra(columnaInicioFijas)})`);
+
+        // Crear encabezados para columnas fijas según imagen 2
+        crearColumnasFijasEstructuraImagen2(
+            worksheet,
+            EXCEL_CONFIG.COLUMNAS_FIJAS,
+            columnaInicioFijas,
+            EXCEL_CONFIG.FILA_INICIO_DATOS,
+            resultadosConsulta,
+            codigosVariables
+        );
+
+        console.groupEnd();
+        console.log("✅ Formato aplicado");
         console.groupEnd();
 
         // DIAGNÓSTICO 3: Verificar estructura dinámica
         console.group("🔍 EXTRACCIÓN ESTRUCTURA DINÁMICA");
         const estructuraDinamica = extraerEstructuraDinamica(worksheet, estructura);
         console.log(`📊 Estructura dinámica extraída (${estructuraDinamica.length} variables):`);
-        
+
         if (estructuraDinamica.length === 0) {
             console.error("❌ ESTRUCTURA DINÁMICA VACÍA - Esto causará fórmulas =0");
         } else {
@@ -240,7 +263,7 @@ export async function exportarTablaHTML(
         console.group("🔍 BUSCANDO REFERENCIAS POBLACIÓN");
         const referenciasPoblacion = obtenerReferenciasPoblacion(worksheet, estructuraDinamica);
         console.log("📍 Referencias población encontradas:", referenciasPoblacion);
-        
+
         if (Object.keys(referenciasPoblacion).length === 0) {
             console.error("❌ REFERENCIAS POBLACIÓN VACÍAS - Fórmulas no funcionarán");
         } else {
@@ -258,7 +281,7 @@ export async function exportarTablaHTML(
         //         estructuraDinamica
         //     );
         //     console.log("🧪 Fórmula '% BCG' obtenida:", formulaTest);
-            
+
         //     if (formulaTest === '=0') {
         //         console.error("❌ LA FÓRMULA MANUAL TAMBIÉN RETORNA =0");
         //         console.log("🔍 Probando fórmula directa desde FORMULAS_LITERALES:");
@@ -285,30 +308,30 @@ export async function exportarTablaHTML(
         console.groupEnd();
 
         // DIAGNÓSTICO 6: Verificar fórmulas aplicadas
-        console.group("🔍 VERIFICANDO FÓRMULAS APLICADAS");
-        if (resultadosConsulta.length > 0) {
-            const filaDatos = EXCEL_CONFIG.FILA_INICIO_DATOS;
-            console.log(`🔍 Verificando fórmulas en fila ${filaDatos}:`);
-            
-            // Calcular columna inicial de fórmulas
-            let totalColumnasDinamicas = 0;
-            estructura.forEach(apartado => {
-                totalColumnasDinamicas += apartado.variables.length;
-            });
-            const columnaInicioFijas = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES + totalColumnasDinamicas;
-            
-            // Verificar algunas columnas de fórmulas
-            for (let i = 0; i < 5; i++) {
-                const columna = columnaInicioFijas + i;
-                const celda = worksheet.getRow(filaDatos).getCell(columna);
-                console.log(`  Col ${columna} (${numeroALetra(columna)}):`, {
-                    valor: celda.value,
-                    tipo: typeof celda.value,
-                    esFormula: celda.value?.formula ? 'SÍ' : 'NO'
-                });
-            }
-        }
-        console.groupEnd();
+        // console.group("🔍 VERIFICANDO FÓRMULAS APLICADAS");
+        // if (resultadosConsulta.length > 0) {
+        //     const filaDatos = EXCEL_CONFIG.FILA_INICIO_DATOS;
+        //     console.log(`🔍 Verificando fórmulas en fila ${filaDatos}:`);
+
+        //     // Calcular columna inicial de fórmulas
+        //     let totalColumnasDinamicas = 0;
+        //     estructura.forEach(apartado => {
+        //         totalColumnasDinamicas += apartado.variables.length;
+        //     });
+        //     const columnaInicioFijas = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES + totalColumnasDinamicas;
+
+        //     // Verificar algunas columnas de fórmulas
+        //     for (let i = 0; i < 5; i++) {
+        //         const columna = columnaInicioFijas + i;
+        //         const celda = worksheet.getRow(filaDatos).getCell(columna);
+        //         console.log(`  Col ${columna} (${numeroALetra(columna)}):`, {
+        //             valor: celda.value,
+        //             tipo: typeof celda.value,
+        //             esFormula: celda.value?.formula ? 'SÍ' : 'NO'
+        //         });
+        //     }
+        // }
+        // console.groupEnd();
 
         // 7. Ajustar anchos de columnas
         console.group("🔍 AJUSTANDO ANCHOS");
@@ -323,21 +346,21 @@ export async function exportarTablaHTML(
         // 9. Descargar archivo
         const nombreArchivo = NOMBRES_ARCHIVOS.EXCEL_RESULTADOS();
         console.log(`💾 Descargando archivo: ${nombreArchivo}`);
-        
+
         await descargarWorkbook(workbook, nombreArchivo);
-        
+
         console.log("✅ Exportación completada exitosamente");
         console.groupEnd();
 
     } catch (error) {
         console.error('❌ Error al exportar tabla HTML:', error);
         console.error('❌ Stack trace:', error.stack);
-        
+
         // Mostrar detalles adicionales del error
         if (error.message && error.message.includes('formula')) {
             console.error('🔍 Error relacionado con fórmulas');
         }
-        
+
         alert(MENSAJES.ERROR_EXPORTAR_TABLA);
         throw error;
     } finally {
@@ -351,7 +374,7 @@ export async function exportarTablaHTML(
 // Función auxiliar para diagnóstico (agregar al archivo)
 function verificarPrimerasFilasExcel(worksheet, numFilas = 5) {
     console.group("🔍 VERIFICACIÓN PRIMERAS FILAS EXCEL");
-    
+
     for (let fila = 1; fila <= numFilas; fila++) {
         console.log(`📊 Fila ${fila}:`);
         for (let col = 1; col <= Math.min(10, worksheet.columnCount); col++) {
@@ -366,7 +389,7 @@ function verificarPrimerasFilasExcel(worksheet, numFilas = 5) {
             }
         }
     }
-    
+
     console.groupEnd();
 }
 
@@ -873,22 +896,22 @@ export function generarResumenExportacion(resultadosConsulta) {
 // Agregar esta función al final de export.js para pruebas
 export function probarExportacion(resultadosConsulta) {
     console.group("🧪 PRUEBA RÁPIDA EXPORTACIÓN");
-    
+
     // 1. Verificar datos de entrada
     console.log("📋 Total registros:", resultadosConsulta.length);
-    
+
     if (resultadosConsulta.length > 0) {
         const primerRegistro = resultadosConsulta[0];
         console.log("📋 Primer registro:", primerRegistro);
-        
-        // 2. Extraer códigos
-        const codigos = extraerCodigosVariables(resultadosConsulta);
-        console.log("📋 Códigos extraídos:", codigos);
-        
+
+        // // 2. Extraer códigos
+        // const codigos = extraerCodigosVariables(resultadosConsulta);
+        // console.log("📋 Códigos extraídos:", codigos);
+
         // 3. Construir estructura
         const estructura = construirEstructuraEncabezados([primerRegistro]);
         console.log("📋 Estructura construida:", estructura);
-        
+
         // 4. Probar extracción de códigos por variable
         console.log("🔍 Códigos por variable:");
         estructura.forEach(apartado => {
@@ -898,7 +921,7 @@ export function probarExportacion(resultadosConsulta) {
             });
         });
     }
-    
+
     console.groupEnd();
 }
 
