@@ -1,14 +1,8 @@
-// ui.js
 import { 
     SELECT2_CONFIG, 
-    CLASES_CSS,
-    MENSAJES
+    CLASES_CSS
 } from './constants.js';
 import { ocultarAccionesSelect2 } from './utils.js';
-
-// ===============================
-// INICIALIZACIÓN DE COMPONENTES UI
-// ===============================
 
 /**
  * Inicializa el componente Select2 para el select de CLUES
@@ -20,20 +14,13 @@ export function inicializarSelect2(options = {}) {
         ...SELECT2_CONFIG.CLUES,
         ...options
     };
-    
     const $select = $('#cluesSelect');
-    
     if (!$select.length) {
         console.warn('Select2: Elemento #cluesSelect no encontrado');
         return null;
     }
-    
-    // Inicializar Select2
     const select2Instance = $select.select2(config);
-    
-    // Configurar eventos personalizados
     configurarEventosSelect2($select);
-    
     console.log('✅ Select2 inicializado correctamente');
     return select2Instance;
 }
@@ -43,24 +30,18 @@ export function inicializarSelect2(options = {}) {
  * @param {jQuery} $select - Elemento jQuery del select
  */
 function configurarEventosSelect2($select) {
-    // Evento al abrir el dropdown
     $select.on('select2:open', function () {
         manejarAperturaDropdown($select);
     });
-    
-    // Evento al cerrar el dropdown
     $select.on('select2:close', function () {
         setTimeout(() => {
             ocultarAccionesSelect2();
         }, 100);
     });
     
-    // Evento al cambiar selección
     $select.on('change', function () {
         const seleccionadas = $select.val() || [];
         console.log(`🔍 CLUES seleccionadas: ${seleccionadas.length}`);
-        
-        // Disparar evento personalizado
         const event = new CustomEvent('clues-seleccionadas', {
             detail: { seleccionadas }
         });
@@ -74,17 +55,11 @@ function configurarEventosSelect2($select) {
  */
 function manejarAperturaDropdown($select) {
     const dropdown = $('.select2-dropdown');
-    
-    // Evitar duplicados
     if (dropdown.find('.select2-actions').length) {
         return;
     }
-    
-    // Agregar botones de acción
     const acciones = $(SELECT2_CONFIG.HTML_BOTONES_SELECCION);
     dropdown.prepend(acciones);
-    
-    // Configurar eventos de los botones
     configurarBotonesSeleccionRapida($select);
 }
 
@@ -93,36 +68,26 @@ function manejarAperturaDropdown($select) {
  * @param {jQuery} $select - Elemento jQuery del select
  */
 function configurarBotonesSeleccionRapida($select) {
-    // Seleccionar todas HG
     $('#btnSelectAllHG').off('click').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        
         const cluesDisponibles = obtenerCluesDisponibles();
         if (!cluesDisponibles) return;
-        
         const seleccionadas = cluesDisponibles.filter(c => c.startsWith("HG"));
         $select.val(seleccionadas).trigger('change');
-        
         ocultarAccionesSelect2();
         $select.select2('close');
-        
         console.log(`✅ Seleccionadas todas HG: ${seleccionadas.length} CLUES`);
     });
     
-    // Seleccionar todas HGIMB
     $('#btnSelectAllHGIMB').off('click').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        
         const cluesDisponibles = obtenerCluesDisponibles();
         if (!cluesDisponibles) return;
-        
         $select.val(cluesDisponibles).trigger('change');
-        
         ocultarAccionesSelect2();
         $select.select2('close');
-        
         console.log(`✅ Seleccionadas todas HGIMB: ${cluesDisponibles.length} CLUES`);
     });
 }
@@ -134,13 +99,8 @@ function configurarBotonesSeleccionRapida($select) {
 function obtenerCluesDisponibles() {
     const options = $('#cluesSelect option');
     if (!options.length) return null;
-    
     return Array.from(options).map(opt => opt.value).filter(v => v);
 }
-
-// ===============================
-// GESTIÓN DE INTERFAZ
-// ===============================
 
 /**
  * Actualiza el select de CLUES con nuevas opciones
@@ -150,27 +110,18 @@ function obtenerCluesDisponibles() {
 export function actualizarSelectClues(clues, mantenerSeleccion = false) {
     const $select = $('#cluesSelect');
     const seleccionActual = mantenerSeleccion ? $select.val() || [] : [];
-    
-    // Limpiar opciones existentes
     $select.empty();
-    
-    // Agregar nuevas opciones
     if (clues && Array.isArray(clues)) {
         clues.forEach(clue => {
             $select.append(new Option(clue, clue));
         });
-        
-        // Restaurar selección si es necesario
         if (mantenerSeleccion && seleccionActual.length > 0) {
             const seleccionValida = seleccionActual.filter(clue => 
                 clues.includes(clue)
             );
             $select.val(seleccionValida).trigger('change');
         }
-        
-        // Habilitar select
         $select.prop('disabled', false);
-        
         console.log(`✅ Select de CLUES actualizado: ${clues.length} opciones`);
     } else {
         console.warn('⚠️ No se proporcionaron CLUES para actualizar el select');
@@ -182,7 +133,6 @@ export function actualizarSelectClues(clues, mantenerSeleccion = false) {
  * @param {Object} elementos - Elementos DOM opcionales
  */
 export function resetearInterfaz(elementos = {}) {
-    // Obtener elementos DOM
     const {
         tablaHeader,
         variablesHeader,
@@ -196,41 +146,27 @@ export function resetearInterfaz(elementos = {}) {
         cluesSelect,
         mensajeCluesCargadas
     } = obtenerElementosDOM(elementos);
-    
-    // 1. Limpiar tabla de resultados
     if (tablaHeader) tablaHeader.innerHTML = "";
     if (variablesHeader) variablesHeader.innerHTML = "";
     if (tablaResultadosBody) tablaResultadosBody.innerHTML = "";
     if (tablaFooter) tablaFooter.innerHTML = "";
     if (resumenConsulta) resumenConsulta.innerHTML = "";
-    
-    // 2. Ocultar secciones
     if (resultadosContainer) {
         resultadosContainer.classList.add(CLASES_CSS.D_NONE);
     }
-    
     if (mensajeCluesCargadas) {
         mensajeCluesCargadas.classList.add(CLASES_CSS.D_NONE);
     }
-    
-    // 3. Deshabilitar botones
     if (btnConsultar) {
         btnConsultar.disabled = true;
     }
-    
     if (btnExportar) {
         btnExportar.disabled = true;
     }
-    
-    // btnExportarSimple se mantiene habilitado por diseño
-    
-    // 4. Limpiar y deshabilitar select de CLUES
     if (cluesSelect) {
         $('#cluesSelect').empty().trigger('change');
         cluesSelect.disabled = true;
     }
-    
-    // 5. Limpiar cualquier notificación
     limpiarNotificaciones();
     
     console.log('🧹 Interfaz reseteada');
@@ -267,30 +203,18 @@ export function actualizarEstadoBotones(estado = {}) {
         cluesSeleccionadas = [],
         resultadosConsulta = []
     } = estado;
-    
     const elementos = obtenerElementosDOM({});
-    
-    // Botón Consultar
     if (elementos.btnConsultar) {
         elementos.btnConsultar.disabled = cluesSeleccionadas.length === 0;
     }
-    
-    // Botón Exportar
     if (elementos.btnExportar) {
         elementos.btnExportar.disabled = resultadosConsulta.length === 0;
     }
-    
-    // Select de CLUES
     if (elementos.cluesSelect) {
         elementos.cluesSelect.disabled = cluesDisponibles.length === 0;
     }
-    
     console.log('🔘 Estado de botones actualizado');
 }
-
-// ===============================
-// GESTIÓN DE NOTIFICACIONES Y MENSAJES
-// ===============================
 
 /**
  * Muestra una notificación en la interfaz
@@ -299,7 +223,6 @@ export function actualizarEstadoBotones(estado = {}) {
  * @param {number} duracion - Duración en milisegundos (0 = permanente)
  */
 export function mostrarNotificacion(tipo, mensaje, duracion = 5000) {
-    // Crear contenedor de notificaciones si no existe
     let contenedor = document.getElementById('notificaciones-container');
     if (!contenedor) {
         contenedor = document.createElement('div');
@@ -307,8 +230,6 @@ export function mostrarNotificacion(tipo, mensaje, duracion = 5000) {
         contenedor.className = 'notificaciones-container';
         document.body.appendChild(contenedor);
     }
-    
-    // Crear notificación
     const notificacion = document.createElement('div');
     notificacion.className = `alert alert-${tipo} alert-dismissible fade show`;
     notificacion.role = 'alert';
@@ -316,11 +237,7 @@ export function mostrarNotificacion(tipo, mensaje, duracion = 5000) {
         ${mensaje}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
-    
-    // Agregar al contenedor
     contenedor.appendChild(notificacion);
-    
-    // Auto-eliminar si tiene duración
     if (duracion > 0) {
         setTimeout(() => {
             if (notificacion.parentNode) {
@@ -328,7 +245,6 @@ export function mostrarNotificacion(tipo, mensaje, duracion = 5000) {
             }
         }, duracion);
     }
-    
     console.log(`📢 Notificación [${tipo}]: ${mensaje}`);
 }
 
@@ -378,24 +294,16 @@ export function limpiarNotificaciones() {
     }
 }
 
-// ===============================
-// GESTIÓN DE SPINNER/CARGANDO
-// ===============================
-
 /**
  * Muestra el spinner de carga
  * @param {HTMLElement} spinnerElement - Elemento spinner (opcional)
  */
 export function mostrarSpinner(spinnerElement = null) {
     const spinner = spinnerElement || document.getElementById('spinnerCarga');
-    
     if (spinner) {
         spinner.classList.remove(CLASES_CSS.D_NONE);
         spinner.style.display = 'flex';
-        
-        // Deshabilitar interacciones mientras carga
         deshabilitarInteracciones(true);
-        
         console.log('🔄 Spinner mostrado');
     }
 }
@@ -406,14 +314,10 @@ export function mostrarSpinner(spinnerElement = null) {
  */
 export function ocultarSpinner(spinnerElement = null) {
     const spinner = spinnerElement || document.getElementById('spinnerCarga');
-    
     if (spinner) {
         spinner.classList.add(CLASES_CSS.D_NONE);
         spinner.style.display = 'none';
-        
-        // Re-habilitar interacciones
         deshabilitarInteracciones(false);
-        
         console.log('✅ Spinner ocultado');
     }
 }
@@ -437,7 +341,6 @@ function deshabilitarInteracciones(deshabilitar) {
         const elemento = document.querySelector(selector);
         if (elemento) {
             elemento.disabled = deshabilitar;
-            
             if (deshabilitar) {
                 elemento.classList.add('disabled');
             } else {
@@ -446,10 +349,6 @@ function deshabilitarInteracciones(deshabilitar) {
         }
     });
 }
-
-// ===============================
-// GESTIÓN DE RESULTADOS
-// ===============================
 
 /**
  * Muestra la sección de resultados
@@ -461,23 +360,16 @@ export function mostrarResultados(data, elementos = {}) {
         resultadosContainer,
         resumenConsulta
     } = obtenerElementosDOM(elementos);
-    
-    // Mostrar contenedor
     if (resultadosContainer) {
         resultadosContainer.classList.remove(CLASES_CSS.D_NONE);
-        
-        // Animar aparición
         resultadosContainer.style.opacity = '0';
         resultadosContainer.style.transform = 'translateY(20px)';
-        
         setTimeout(() => {
             resultadosContainer.style.transition = 'all 0.3s ease';
             resultadosContainer.style.opacity = '1';
             resultadosContainer.style.transform = 'translateY(0)';
         }, 10);
     }
-    
-    // Actualizar resumen
     if (resumenConsulta && data) {
         resumenConsulta.innerHTML = `
             <strong>Catálogo: </strong>${data.catalogo || 'N/A'} –
@@ -495,16 +387,11 @@ export function mostrarResultados(data, elementos = {}) {
  */
 export function ocultarResultados(elementos = {}) {
     const { resultadosContainer } = obtenerElementosDOM(elementos);
-    
     if (resultadosContainer) {
         resultadosContainer.classList.add(CLASES_CSS.D_NONE);
         console.log('📊 Resultados ocultados');
     }
 }
-
-// ===============================
-// GESTIÓN DE FORMULARIOS
-// ===============================
 
 /**
  * Valida el formulario de consulta
@@ -513,17 +400,13 @@ export function ocultarResultados(elementos = {}) {
 export function validarFormularioConsulta() {
     const catalogo = document.getElementById('catalogoSelect')?.value;
     const cluesSeleccionadas = $('#cluesSelect').val() || [];
-    
     const errores = [];
-    
     if (!catalogo) {
         errores.push('Por favor, selecciona un catálogo.');
     }
-    
     if (cluesSeleccionadas.length === 0) {
         errores.push('Por favor, selecciona al menos una CLUES.');
     }
-    
     return {
         valido: errores.length === 0,
         errores,
@@ -539,12 +422,8 @@ export function validarFormularioConsulta() {
  * @param {Array} errores - Lista de errores
  */
 export function mostrarErroresValidacion(errores) {
-    // Limpiar errores anteriores
     limpiarErroresValidacion();
-    
     if (!errores || errores.length === 0) return;
-    
-    // Crear contenedor de errores
     let contenedorErrores = document.getElementById('errores-validacion');
     if (!contenedorErrores) {
         contenedorErrores = document.createElement('div');
@@ -555,7 +434,6 @@ export function mostrarErroresValidacion(errores) {
         formulario.prepend(contenedorErrores);
     }
     
-    // Agregar errores
     errores.forEach(error => {
         const errorElement = document.createElement('p');
         errorElement.className = 'mb-1';
@@ -563,7 +441,6 @@ export function mostrarErroresValidacion(errores) {
         contenedorErrores.appendChild(errorElement);
     });
     
-    // Resaltar campos con error
     if (errores.some(e => e.includes('catálogo'))) {
         const selectCatalogo = document.getElementById('catalogoSelect');
         if (selectCatalogo) {
@@ -583,28 +460,20 @@ export function mostrarErroresValidacion(errores) {
  * Limpia los errores de validación
  */
 export function limpiarErroresValidacion() {
-    // Remover contenedor de errores
     const contenedorErrores = document.getElementById('errores-validacion');
     if (contenedorErrores) {
         contenedorErrores.remove();
     }
-    
-    // Limpiar clases de error de los campos
     const campos = [
         document.getElementById('catalogoSelect'),
         document.getElementById('cluesSelect')
     ];
-    
     campos.forEach(campo => {
         if (campo) {
             campo.classList.remove('is-invalid');
         }
     });
 }
-
-// ===============================
-// UTILIDADES DE UI
-// ===============================
 
 /**
  * Configura tooltips de Bootstrap
@@ -614,7 +483,6 @@ export function configurarTooltips() {
     tooltips.forEach(el => {
         new bootstrap.Tooltip(el);
     });
-    
     console.log(`🔧 ${tooltips.length} tooltips configurados`);
 }
 
@@ -626,7 +494,6 @@ export function configurarPopovers() {
     popovers.forEach(el => {
         new bootstrap.Popover(el);
     });
-    
     console.log(`🔧 ${popovers.length} popovers configurados`);
 }
 
@@ -648,8 +515,6 @@ export function actualizarTituloPagina(texto = '') {
  */
 export function crearElemento(tag, atributos = {}, contenido = '') {
     const elemento = document.createElement(tag);
-    
-    // Establecer atributos
     Object.entries(atributos).forEach(([key, value]) => {
         if (key === 'className') {
             elemento.className = value;
@@ -662,7 +527,6 @@ export function crearElemento(tag, atributos = {}, contenido = '') {
         }
     });
     
-    // Establecer contenido
     if (typeof contenido === 'string') {
         elemento.innerHTML = contenido;
     } else if (contenido instanceof HTMLElement) {
@@ -692,13 +556,8 @@ export function descargarArchivo(blob, nombre) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
     console.log(`💾 Archivo descargado: ${nombre}`);
 }
-
-// ===============================
-// MANEJADORES DE EVENTOS
-// ===============================
 
 /**
  * Agrega un event listener con manejo de errores
@@ -712,12 +571,10 @@ export function agregarEventListener(elemento, evento, manejador, options = {}) 
         const target = typeof elemento === 'string' 
             ? document.querySelector(elemento) 
             : elemento;
-        
         if (!target) {
             console.warn(`Elemento no encontrado: ${elemento}`);
             return;
         }
-        
         target.addEventListener(evento, manejador, options);
         console.log(`🎯 Event listener agregado: ${evento} en ${elemento}`);
     } catch (error) {
@@ -736,19 +593,13 @@ export function removerEventListener(elemento, evento, manejador) {
         const target = typeof elemento === 'string' 
             ? document.querySelector(elemento) 
             : elemento;
-        
         if (!target) return;
-        
         target.removeEventListener(evento, manejador);
         console.log(`🎯 Event listener removido: ${evento} en ${elemento}`);
     } catch (error) {
         console.error(`Error al remover event listener: ${error.message}`);
     }
 }
-
-// ===============================
-// INICIALIZACIÓN COMPLETA DE UI
-// ===============================
 
 /**
  * Inicializa todos los componentes de UI
@@ -758,37 +609,19 @@ export function inicializarUI(config = {}) {
     console.log('🚀 Inicializando interfaz de usuario...');
     
     try {
-        // 1. Inicializar Select2
         inicializarSelect2(config.select2);
-        
-        // 2. Configurar tooltips y popovers
         configurarTooltips();
         configurarPopovers();
-        
-        // 3. Actualizar título
         actualizarTituloPagina();
-        
-        // 4. Aplicar tema si está configurado
         if (config.tema) {
             aplicarTema(config.tema);
         }
-        
-        // 5. Inicializar componentes adicionales
         inicializarComponentesAdicionales();
-        
         console.log('✅ Interfaz de usuario inicializada correctamente');
     } catch (error) {
         console.error('❌ Error al inicializar UI:', error);
         mostrarError('Error al inicializar la interfaz de usuario');
     }
-}
-
-/**
- * Inicializa componentes adicionales de UI
- */
-function inicializarComponentesAdicionales() {
-    // Puedes agregar aquí la inicialización de otros componentes
-    // como modales, acordeones, tabs, etc.
 }
 
 /**
@@ -802,48 +635,31 @@ export function aplicarTema(tema) {
     console.log(`🎨 Tema aplicado: ${tema}`);
 }
 
-// ===============================
-// EXPORTACIÓN POR DEFECTO
-// ===============================
-
 export default {
-    // Inicialización
     inicializarSelect2,
     inicializarUI,
     configurarTooltips,
     configurarPopovers,
-    
-    // Gestión de interfaz
     resetearInterfaz,
     actualizarSelectClues,
     actualizarEstadoBotones,
     mostrarResultados,
     ocultarResultados,
-    
-    // Notificaciones
     mostrarNotificacion,
     mostrarExito,
     mostrarError,
     mostrarAdvertencia,
     mostrarInfo,
     limpiarNotificaciones,
-    
-    // Spinner
     mostrarSpinner,
     ocultarSpinner,
-    
-    // Formularios
     validarFormularioConsulta,
     mostrarErroresValidacion,
     limpiarErroresValidacion,
-    
-    // Utilidades
     actualizarTituloPagina,
     crearElemento,
     descargarArchivo,
     aplicarTema,
-    
-    // Eventos
     agregarEventListener,
     removerEventListener
 };
