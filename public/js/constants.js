@@ -1,16 +1,6 @@
-// constants.js
-
-// ===============================
-// CONSTANTES DE API
-// ===============================
-
 export const API_LARAVEL = "/consultar-biologicos";
 export const API_FASTAPI = "http://127.0.0.1:8080";
 // export const API_FASTAPI = "http://0.0.0.0:8080"; // Alternativa
-
-// ===============================
-// CONSTANTES DE FÓRMULAS EXCEL
-// ===============================
 
 export const FORMULAS_LITERALES = {
     "% BCG": [
@@ -76,10 +66,6 @@ export const FORMULAS_LITERALES = {
     ]
 };
 
-// ===============================
-// CONSTANTES DE COLORES
-// ===============================
-
 export const COLORES = {
     // Paleta para apartados en Excel
     APARTADOS: [
@@ -129,10 +115,6 @@ export const COLORES = {
     OSCUROS: ['902449', '0066CC']
 };
 
-// ===============================
-// CONSTANTES DE PATRONES Y CÓDIGOS
-// ===============================
-
 export const PATRONES_CODIGOS = {
     BCG: ["BIO01", "BIO50", "VBC02"],
     HEPATITIS: ["VAC06", "BIO08"],
@@ -174,10 +156,6 @@ export const PATRONES_CODIGOS = {
     VAC12:["VAC12"]
 
 };
-
-// ===============================
-// CONSTANTES DE CONFIGURACIÓN EXCEL
-// ===============================
 
 export const EXCEL_CONFIG = {
     // Configuración de columnas fijas
@@ -302,8 +280,7 @@ export const EXCEL_CONFIG = {
             ]
         }
     ],
-    
-    // Configuración de fórmulas de plantilla
+
     FORMULAS_PLANTILLA: {
         "FG": "IFERROR((G@+H@+I@)/((FC@*0.0833)*12),0)",
         "FH": "IFERROR((M@)/((FC@*0.0833)*12),0)",
@@ -350,10 +327,6 @@ export const EXCEL_CONFIG = {
     COLUMNA_INICIO_VARIABLES: 7 // Columna G
 };
 
-// ===============================
-// CONSTANTES DE SELECT2
-// ===============================
-
 export const SELECT2_CONFIG = {
     CLUES: {
         placeholder: "Selecciona una o más CLUES",
@@ -382,10 +355,6 @@ export const SELECT2_CONFIG = {
     `
 };
 
-// ===============================
-// CONSTANTES DE TIPOS DE POBLACIÓN
-// ===============================
-
 export const TIPOS_POBLACION = {
     MENOR_1_AÑO: "POBLACIÓN <1 AÑO",
     UN_AÑO: "POBLACIÓN 1 AÑO",
@@ -404,10 +373,6 @@ export const MAPEO_POBLACION_POR_VARIABLE = {
     "6 AÑO": "POBLACIÓN 6 AÑOS"
 };
 
-// ===============================
-// CONSTANTES DE MENSAJES Y TEXTOS
-// ===============================
-
 export const MENSAJES = {
     CARGA_CORRECTA: "🔵 vacunas.js cargado correctamente",
     ERROR_CONEXION: "🔴 ERROR de conexión:",
@@ -421,10 +386,6 @@ export const MENSAJES = {
     ERROR_EXPORTAR_EXCEL: "Error al generar el archivo Excel.",
     ERROR_EXPORTAR_TABLA: "Hubo un problema al generar el archivo Excel."
 };
-
-// ===============================
-// CONSTANTES DE REGEX
-// ===============================
 
 export const REGEX = {
     // Para extraer variables de fórmulas
@@ -440,29 +401,17 @@ export const REGEX = {
     MARCADOR_FILA_LLAVES: /{FILA}/g
 };
 
-// ===============================
-// CONSTANTES DE RUTAS Y ARCHIVOS
-// ===============================
-
 export const RUTAS = {
     PLANTILLA_EXCEL: "../static/Plantilla_CUBOS.xlsx",
     INSTITUCIONES_JSON: "/instituciones-json",
     CONSULTAR_BIOLOGICOS: "/consultar-biologicos"
 };
 
-// ===============================
-// CONSTANTES DE NOMBRES DE ARCHIVOS
-// ===============================
-
 export const NOMBRES_ARCHIVOS = {
     EXCEL_BIOLOGICOS: "Biologicos.xlsx",
     EXCEL_RESULTADOS: (fecha = new Date().toISOString().slice(0, 10)) => 
         `Resultados_Vacunacion_${fecha}.xlsx`
 };
-
-// ===============================
-// CONSTANTES DE ESTADOS Y FLAGS
-// ===============================
 
 export const ESTADOS = {
     INTERFAZ: {
@@ -478,19 +427,11 @@ export const ESTADOS = {
     }
 };
 
-// ===============================
-// CONSTANTES DE CLASES CSS
-// ===============================
-
 export const CLASES_CSS = {
     D_NONE: "d-none",
     TABLE_SECONDARY: "table-secondary",
     SELECT2_ACTIONS: "select2-actions"
 };
-
-// ===============================
-// EXPORTACIÓN POR DEFECTO
-// ===============================
 
 export default {
     API_LARAVEL,
