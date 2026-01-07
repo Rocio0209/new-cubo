@@ -1,10 +1,5 @@
-// table-renderer.js
 import { obtenerInicialesInstitucion } from './state.js';
-import { CLASES_CSS } from './constants.js';
-
-// ===============================
-// FUNCIONES PRINCIPALES DE RENDERIZADO
-// ===============================
+import { CLASES_CSS } from './constants.js'
 
 /**
  * Renderiza la tabla principal con los resultados de la consulta
@@ -17,28 +12,15 @@ export function renderTabla(data, elementosDOM, institucionesCatalogo = []) {
         console.warn("Datos inválidos para renderizar tabla");
         return;
     }
-
-    // Validar elementos DOM requeridos
     if (!validarElementosDOM(elementosDOM)) {
         console.error("Elementos DOM requeridos no encontrados");
         return;
     }
-
-    // Limpiar tabla existente
     limpiarTabla(elementosDOM);
-
-    // Crear estructura de apartados
     const { apartados, totales } = analizarEstructuraResultados(data.resultados);
-
-    // Renderizar encabezados
     renderEncabezados(apartados, elementosDOM);
-
-    // Renderizar filas de datos
     renderFilasDatos(data.resultados, apartados, elementosDOM, institucionesCatalogo, totales);
-
-    // Renderizar totales
     renderTotales(apartados, totales, elementosDOM);
-
     console.log(`✅ Tabla renderizada: ${data.resultados.length} filas, ${Object.keys(apartados).length} apartados`);
 }
 
@@ -53,17 +35,11 @@ export function renderTablaResumen(data, elementosDOM, institucionesCatalogo = [
         console.warn("Datos inválidos para renderizar tabla resumen");
         return;
     }
-
-    // Validar elementos DOM requeridos
     if (!validarElementosDOM(elementosDOM)) {
         console.error("Elementos DOM requeridos no encontrados");
         return;
     }
-
-    // Limpiar tabla existente
     limpiarTabla(elementosDOM);
-
-    // Encabezados fijos para resumen
     elementosDOM.tablaHeader.innerHTML = `
         <th>CLUES</th>
         <th>Unidad</th>
@@ -74,8 +50,6 @@ export function renderTablaResumen(data, elementosDOM, institucionesCatalogo = [
         <th>Total Variables</th>
         <th>Total Valor</th>
     `;
-
-    // Calcular estadísticas por CLUES
     data.resultados.forEach(r => {
         const estadisticas = calcularEstadisticasCLUES(r);
         const fila = `
@@ -88,10 +62,8 @@ export function renderTablaResumen(data, elementosDOM, institucionesCatalogo = [
             <td>${estadisticas.totalVariables}</td>
             <td>${estadisticas.totalValor}</td>
         `;
-        
         elementosDOM.tablaResultadosBody.innerHTML += `<tr>${fila}</tr>`;
     });
-
     console.log(`✅ Tabla resumen renderizada: ${data.resultados.length} filas`);
 }
 
@@ -106,31 +78,17 @@ export function renderTablaAgrupada(data, elementosDOM, institucionesCatalogo = 
         console.warn("Datos inválidos para renderizar tabla agrupada");
         return;
     }
-
-    // Validar elementos DOM requeridos
     if (!validarElementosDOM(elementosDOM)) {
         console.error("Elementos DOM requeridos no encontrados");
         return;
     }
-
-    // Limpiar tabla existente
     limpiarTabla(elementosDOM);
-
-    // Crear estructura agrupada
     const estructura = crearEstructuraAgrupada(data.resultados);
-
-    // Renderizar encabezados agrupados
     renderEncabezadosAgrupados(estructura, elementosDOM);
-
-    // Renderizar datos agrupados
     renderDatosAgrupados(data.resultados, estructura, elementosDOM, institucionesCatalogo);
 
     console.log(`✅ Tabla agrupada renderizada: ${data.resultados.length} CLUES, ${estructura.length} grupos`);
 }
-
-// ===============================
-// FUNCIONES AUXILIARES DE RENDERIZADO
-// ===============================
 
 /**
  * Analiza la estructura de los resultados para identificar apartados y variables
@@ -140,15 +98,12 @@ export function renderTablaAgrupada(data, elementosDOM, institucionesCatalogo = 
 function analizarEstructuraResultados(resultados) {
     const apartados = {};
     const totales = {};
-
     resultados.forEach(r => {
         if (!r.biologicos) return;
-
         r.biologicos.forEach(ap => {
             if (!apartados[ap.apartado]) {
                 apartados[ap.apartado] = [];
             }
-
             if (ap.grupos) {
                 ap.grupos.forEach(g => {
                     if (g.variables) {
@@ -173,7 +128,6 @@ function analizarEstructuraResultados(resultados) {
  * @param {Object} elementosDOM - Referencias a elementos del DOM
  */
 function renderEncabezados(apartados, elementosDOM) {
-    // Encabezados fijos
     elementosDOM.tablaHeader.innerHTML = `
         <th rowspan="2">CLUES</th>
         <th rowspan="2">Unidad</th>
@@ -182,8 +136,6 @@ function renderEncabezados(apartados, elementosDOM) {
         <th rowspan="2">Municipio</th>
         <th rowspan="2">Institución</th>
     `;
-
-    // Encabezados dinámicos (apartados)
     Object.entries(apartados).forEach(([apartado, vars]) => {
         elementosDOM.tablaHeader.innerHTML += `<th colspan="${vars.length}">${apartado}</th>`;
         vars.forEach(v => elementosDOM.variablesHeader.innerHTML += `<th>${v}</th>`);
@@ -222,22 +174,17 @@ function crearFilaDatos(resultado, apartados, institucionesCatalogo, totales) {
         <td>${resultado.unidad?.municipio ?? ""}</td>
         <td>${obtenerInicialesInstitucion(resultado.unidad?.idinstitucion, institucionesCatalogo)}</td>
     `;
-
     Object.entries(apartados).forEach(([apartado, vars]) => {
         const grupos = resultado.biologicos?.find(b => b.apartado === apartado)?.grupos ?? [];
         const dict = crearDiccionarioVariables(grupos);
-
         vars.forEach(v => {
             const valor = Number(dict[v] ?? 0);
             fila += `<td>${valor}</td>`;
-            
-            // Acumular total
             if (totales[v] !== undefined) {
                 totales[v] += valor;
             }
         });
     });
-
     return fila;
 }
 
@@ -249,13 +196,11 @@ function crearFilaDatos(resultado, apartados, institucionesCatalogo, totales) {
  */
 function renderTotales(apartados, totales, elementosDOM) {
     let filaTotales = `<td colspan="6"><strong>TOTALES GENERALES</strong></td>`;
-
     Object.values(apartados).forEach(vars => {
         vars.forEach(v => {
             filaTotales += `<td><strong>${totales[v]}</strong></td>`;
         });
     });
-
     elementosDOM.tablaFooter.innerHTML = `<tr class="${CLASES_CSS.TABLE_SECONDARY}">${filaTotales}</tr>`;
 }
 
@@ -266,7 +211,6 @@ function renderTotales(apartados, totales, elementosDOM) {
  */
 function crearDiccionarioVariables(grupos) {
     const dict = {};
-    
     grupos.forEach(g => {
         if (g.variables) {
             g.variables.forEach(v => {
@@ -274,13 +218,8 @@ function crearDiccionarioVariables(grupos) {
             });
         }
     });
-    
     return dict;
 }
-
-// ===============================
-// FUNCIONES DE TABLA AGRUPADA
-// ===============================
 
 /**
  * Crea estructura agrupada para visualización jerárquica
@@ -290,11 +229,8 @@ function crearDiccionarioVariables(grupos) {
 function crearEstructuraAgrupada(resultados) {
     const estructura = [];
     const apartadosMap = new Map();
-
-    // Primera pasada: identificar todos los apartados y grupos
     resultados.forEach(r => {
         if (!r.biologicos) return;
-
         r.biologicos.forEach(ap => {
             if (!apartadosMap.has(ap.apartado)) {
                 apartadosMap.set(ap.apartado, {
@@ -302,9 +238,7 @@ function crearEstructuraAgrupada(resultados) {
                     grupos: new Map()
                 });
             }
-
             const apartadoData = apartadosMap.get(ap.apartado);
-
             if (ap.grupos) {
                 ap.grupos.forEach(g => {
                     if (!apartadoData.grupos.has(g.grupo)) {
@@ -313,9 +247,7 @@ function crearEstructuraAgrupada(resultados) {
                             variables: new Set()
                         });
                     }
-
                     const grupoData = apartadoData.grupos.get(g.grupo);
-
                     if (g.variables) {
                         g.variables.forEach(v => {
                             grupoData.variables.add(v.variable);
@@ -325,14 +257,11 @@ function crearEstructuraAgrupada(resultados) {
             }
         });
     });
-
-    // Convertir Map a Array para renderizado
     apartadosMap.forEach(apartadoData => {
         const apartado = {
             nombre: apartadoData.nombre,
             grupos: []
         };
-
         apartadoData.grupos.forEach(grupoData => {
             apartado.grupos.push({
                 nombre: grupoData.nombre,
@@ -354,20 +283,14 @@ function crearEstructuraAgrupada(resultados) {
 function renderEncabezadosAgrupados(estructura, elementosDOM) {
     let htmlHeader = '';
     let htmlVariables = '';
-    let totalColumnas = 6; // Columnas fijas
-
-    // Calcular spans para combinación de celdas
+    let totalColumnas = 6; 
     estructura.forEach(apartado => {
         let totalVariablesApartado = 0;
-        
         apartado.grupos.forEach(grupo => {
             totalVariablesApartado += grupo.variables.length;
         });
-
         htmlHeader += `<th colspan="${totalVariablesApartado}">${apartado.nombre}</th>`;
         totalColumnas += totalVariablesApartado;
-
-        // Variables por grupo
         apartado.grupos.forEach(grupo => {
             if (grupo.variables.length > 1) {
                 htmlVariables += `<th colspan="${grupo.variables.length}">${grupo.nombre}</th>`;
@@ -378,8 +301,6 @@ function renderEncabezadosAgrupados(estructura, elementosDOM) {
             }
         });
     });
-
-    // Encabezados fijos
     const encabezadosFijos = `
         <th rowspan="3">CLUES</th>
         <th rowspan="3">Unidad</th>
@@ -388,11 +309,9 @@ function renderEncabezadosAgrupados(estructura, elementosDOM) {
         <th rowspan="3">Municipio</th>
         <th rowspan="3">Institución</th>
     `;
-
     elementosDOM.tablaHeader.innerHTML = encabezadosFijos + htmlHeader;
     elementosDOM.variablesHeader.innerHTML = htmlVariables;
 
-    // Crear tercera fila para nombres de variables individuales
     let htmlVariablesIndividuales = '';
     estructura.forEach(apartado => {
         apartado.grupos.forEach(grupo => {
@@ -402,7 +321,6 @@ function renderEncabezadosAgrupados(estructura, elementosDOM) {
         });
     });
 
-    // Agregar fila de variables individuales
     const filaVariables = document.createElement('tr');
     filaVariables.innerHTML = '<td colspan="6"></td>' + htmlVariablesIndividuales;
     
@@ -429,7 +347,6 @@ function renderDatosAgrupados(resultados, estructura, elementosDOM, institucione
             <td>${r.unidad?.municipio ?? ""}</td>
             <td>${obtenerInicialesInstitucion(r.unidad?.idinstitucion, institucionesCatalogo)}</td>
         `;
-
         estructura.forEach(apartado => {
             const datosApartado = r.biologicos?.find(b => b.apartado === apartado.nombre);
             
@@ -447,10 +364,6 @@ function renderDatosAgrupados(resultados, estructura, elementosDOM, institucione
     });
 }
 
-// ===============================
-// FUNCIONES DE UTILIDAD
-// ===============================
-
 /**
  * Valida que los elementos DOM requeridos existan
  * @param {Object} elementosDOM - Referencias a elementos del DOM
@@ -463,7 +376,6 @@ function validarElementosDOM(elementosDOM) {
         'tablaResultadosBody',
         'tablaFooter'
     ];
-
     for (const elemento of elementosRequeridos) {
         if (!elementosDOM[elemento]) {
             console.error(`Elemento DOM requerido no encontrado: ${elemento}`);
@@ -483,8 +395,6 @@ function limpiarTabla(elementosDOM) {
     if (elementosDOM.variablesHeader) elementosDOM.variablesHeader.innerHTML = "";
     if (elementosDOM.tablaResultadosBody) elementosDOM.tablaResultadosBody.innerHTML = "";
     if (elementosDOM.tablaFooter) elementosDOM.tablaFooter.innerHTML = "";
-    
-    // Limpiar cualquier fila adicional en thead
     const thead = elementosDOM.tablaHeader?.parentNode;
     if (thead) {
         const filasAdicionales = thead.querySelectorAll('tr:not(:first-child):not(:nth-child(2))');
@@ -500,7 +410,6 @@ function limpiarTabla(elementosDOM) {
 function calcularEstadisticasCLUES(resultado) {
     let totalVariables = 0;
     let totalValor = 0;
-
     if (resultado.biologicos) {
         resultado.biologicos.forEach(ap => {
             if (ap.grupos) {
@@ -532,7 +441,6 @@ function formatearNumero(numero) {
     } else if (numero >= 1000) {
         return (numero / 1000).toFixed(1) + 'K';
     }
-    
     return numero.toString();
 }
 
@@ -549,10 +457,6 @@ function obtenerClasesValor(valor) {
     return '';
 }
 
-// ===============================
-// FUNCIONES DE ACTUALIZACIÓN DINÁMICA
-// ===============================
-
 /**
  * Actualiza una fila específica en la tabla
  * @param {number} index - Índice de la fila
@@ -562,10 +466,7 @@ function obtenerClasesValor(valor) {
  */
 export function actualizarFila(index, nuevoDato, elementosDOM, institucionesCatalogo) {
     const filas = elementosDOM.tablaResultadosBody.querySelectorAll('tr');
-    
     if (index >= 0 && index < filas.length) {
-        // Re-renderizar la fila específica
-        // Esta función necesitaría más contexto sobre la estructura
         console.log(`Actualizando fila ${index}`, nuevoDato);
     }
 }
@@ -577,8 +478,6 @@ export function actualizarFila(index, nuevoDato, elementosDOM, institucionesCata
  * @param {Array} institucionesCatalogo - Catálogo de instituciones
  */
 export function agregarFila(nuevoResultado, elementosDOM, institucionesCatalogo) {
-    // Esta función necesitaría conocer la estructura actual de la tabla
-    // para agregar una fila consistente
     console.log("Agregando nueva fila", nuevoResultado);
 }
 
@@ -589,16 +488,11 @@ export function agregarFila(nuevoResultado, elementosDOM, institucionesCatalogo)
  */
 export function eliminarFila(index, elementosDOM) {
     const filas = elementosDOM.tablaResultadosBody.querySelectorAll('tr');
-    
     if (index >= 0 && index < filas.length) {
         filas[index].remove();
         console.log(`Fila ${index} eliminada`);
     }
 }
-
-// ===============================
-// FUNCIONES DE ORDENAMIENTO Y FILTRADO
-// ===============================
 
 /**
  * Ordena la tabla por una columna específica
@@ -609,7 +503,6 @@ export function eliminarFila(index, elementosDOM) {
 export function ordenarTabla(columnaIndex, orden = 'asc', elementosDOM) {
     const tbody = elementosDOM.tablaResultadosBody;
     const filas = Array.from(tbody.querySelectorAll('tr'));
-    
     filas.sort((a, b) => {
         const valorA = obtenerValorCelda(a, columnaIndex);
         const valorB = obtenerValorCelda(b, columnaIndex);
@@ -621,9 +514,7 @@ export function ordenarTabla(columnaIndex, orden = 'asc', elementosDOM) {
         }
     });
     
-    // Re-insertar filas ordenadas
     filas.forEach(fila => tbody.appendChild(fila));
-    
     console.log(`Tabla ordenada por columna ${columnaIndex} (${orden})`);
 }
 
@@ -641,13 +532,8 @@ export function filtrarTabla(columnaIndex, valor, elementosDOM) {
         const coincide = valorCelda.toString().toLowerCase().includes(valor.toString().toLowerCase());
         fila.style.display = coincide ? '' : 'none';
     });
-    
     console.log(`Tabla filtrada por columna ${columnaIndex}: "${valor}"`);
 }
-
-// ===============================
-// FUNCIONES AUXILIARES DE MANIPULACIÓN
-// ===============================
 
 /**
  * Obtiene el valor de una celda específica
@@ -661,8 +547,6 @@ function obtenerValorCelda(fila, columnaIndex) {
     if (columnaIndex >= 0 && columnaIndex < celdas.length) {
         const celda = celdas[columnaIndex];
         const texto = celda.textContent.trim();
-        
-        // Intentar convertir a número si es posible
         const numero = Number(texto);
         return isNaN(numero) ? texto : numero;
     }
@@ -680,30 +564,18 @@ function compararValores(a, b) {
     if (typeof a === 'number' && typeof b === 'number') {
         return a - b;
     }
-    
     return a.toString().localeCompare(b.toString());
 }
 
-// ===============================
-// EXPORTACIÓN POR DEFECTO
-// ===============================
-
 export default {
-    // Funciones principales
     renderTabla,
     renderTablaResumen,
     renderTablaAgrupada,
-    
-    // Funciones de actualización
     actualizarFila,
     agregarFila,
     eliminarFila,
-    
-    // Funciones de ordenamiento y filtrado
     ordenarTabla,
     filtrarTabla,
-    
-    // Funciones auxiliares
     validarElementosDOM,
     limpiarTabla,
     calcularEstadisticasCLUES,
