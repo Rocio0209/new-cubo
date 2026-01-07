@@ -1,4 +1,3 @@
-// export.js
 const ExcelJS = window.ExcelJS;
 import {
     EXCEL_CONFIG,
@@ -12,23 +11,12 @@ import {
     construirDatosParaExcel,
     crearColumnasFijasEstructuraImagen2,
     construirFilaVariables,
-    aplicarFormulasColumnasFijas,
     aplicarFormulasPlantilla,
-    construirFormulaDesdeVariables,
-    extraerEstructuraDinamica,          // ← AGREGAR
-    obtenerReferenciasPoblacion,        // ← AGREGAR (¡ESTA FALTA!)
-    numeroALetra,                       // ← AGREGAR si es necesario
-    letraANumero,
+    extraerEstructuraDinamica,       
+    obtenerReferenciasPoblacion,   
+    numeroALetra,                       
     aplicarFormulasColumnasFijasConMapa,
-    obtenerFormulaExcel
 } from './excel-formulas.js';
-
-// ===============================
-// FUNCIONES DE EXPORTACIÓN PRINCIPALES
-// ===============================
-// export.js
-
-// ... (tus imports actuales)
 
 /**
  * Extrae todos los códigos de variables (primeros 5 caracteres) desde los resultados
@@ -53,8 +41,6 @@ function extraerCodigosVariables(resultadosConsulta) {
     return Array.from(codigos);
 }
 
-// probarExportacion(resultadosConsulta);
-
 /**
  * Exporta datos a Excel usando la plantilla CUBOS
  * @param {Array} resultadosConsulta - Resultados de la consulta
@@ -75,7 +61,6 @@ export async function exportarExcel(
 
         const workbook = new ExcelJS.Workbook();
 
-        // Cargar plantilla
         console.log("📥 Cargando plantilla desde:", RUTAS.PLANTILLA_EXCEL);
         const response = await fetch(RUTAS.PLANTILLA_EXCEL);
 
@@ -89,13 +74,11 @@ export async function exportarExcel(
         const sheet = workbook.getWorksheet(1);
         const filaInicio = EXCEL_CONFIG.FILA_INICIO_DATOS;
 
-        // Llenar datos en la plantilla
         console.log(`📝 Llenando ${resultadosConsulta.length} registros en la plantilla...`);
 
         resultadosConsulta.forEach((r, index) => {
             const fila = filaInicio + index;
 
-            // ======== COLUMNAS A–F (fijas) ========
             sheet.getCell(`A${fila}`).value = r.clues || '';
             sheet.getCell(`B${fila}`).value = r.unidad?.nombre ?? "";
             sheet.getCell(`C${fila}`).value = r.unidad?.entidad ?? "";
@@ -105,9 +88,8 @@ export async function exportarExcel(
                 ? obtenerInicialesInstitucion(r.unidad?.idinstitucion)
                 : "";
 
-            // ======== VARIABLES ORDENADAS ========
             const valores = construirFilaVariables(r);
-            let col = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES; // Columna G = 7
+            let col = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES; 
 
             valores.forEach(v => {
                 sheet.getCell(fila, col).value = Number(v) || 0;
@@ -115,13 +97,10 @@ export async function exportarExcel(
             });
         });
 
-        // Aplicar fórmulas de plantilla
         await aplicarFormulasPlantilla(sheet, resultadosConsulta, obtenerInicialesInstitucion, filaInicio);
 
-        // Configurar cálculo automático
         workbook.calcProperties.fullCalcOnLoad = true;
 
-        // Descargar archivo
         await descargarWorkbook(workbook, NOMBRES_ARCHIVOS.EXCEL_BIOLOGICOS);
 
     } catch (error) {
@@ -155,7 +134,6 @@ export async function exportarTablaHTML(
             mostrarSpinner();
         }
 
-        // DIAGNÓSTICO 1: Verificar datos de entrada
         console.group("🔍 DIAGNÓSTICO DATOS ENTRADA");
         console.log("📊 Total resultados consulta:", resultadosConsulta?.length || 0);
 
@@ -172,12 +150,10 @@ export async function exportarTablaHTML(
         }
         console.groupEnd();
 
-        // 1. Crear libro y hoja
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Resultados');
         console.log("✅ Workbook y worksheet creados");
 
-        // 2. Obtener la estructura de apartados y variables
         console.group("🔍 CONSTRUYENDO ESTRUCTURA");
         const estructura = construirEstructuraEncabezados(resultadosConsulta);
         console.log("📋 Estructura obtenida:", estructura);
@@ -192,8 +168,6 @@ export async function exportarTablaHTML(
         if (estructura.length === 0) {
             throw new Error("No hay datos para exportar");
         }
-
-        // 3. Crear encabezados
         console.group("🔍 CREANDO ENCABEZADOS");
         crearEncabezadosCombinados(worksheet, estructura);
         console.log("✅ Encabezados creados");
@@ -201,25 +175,17 @@ export async function exportarTablaHTML(
         console.log("  - Filas:", worksheet.rowCount);
         console.log("  - Columnas:", worksheet.columnCount);
         console.groupEnd();
-
-        // 4. Agregar datos
         console.group("🔍 AGREGANDO DATOS");
         agregarDatosResultados(worksheet, estructura, resultadosConsulta, obtenerInicialesInstitucion);
         console.log(`✅ Datos agregados: ${resultadosConsulta.length} filas`);
         console.groupEnd();
-
-        // 5. Aplicar formato a encabezados
         console.group("🔍 APLICANDO FORMATO");
         aplicarFormatoEncabezados(worksheet, estructura);
         console.group("🔍 DIAGNÓSTICO CÓDIGOS");
         const codigosVariables = extraerCodigosVariables(resultadosConsulta);
         console.log(`📋 Códigos extraídos del back (${codigosVariables.length}):`, codigosVariables);
         console.groupEnd();
-
-        // 5.5 CREAR COLUMNAS FIJAS CON ENCABEZADOS (¡NUEVA SECCIÓN!)
         console.group("🔍 CREANDO COLUMNAS FIJAS CON ENCABEZADOS");
-
-        // Calcular dónde empiezan las columnas fijas
         let totalColumnasDinamicas = 0;
         estructura.forEach(apartado => {
             totalColumnasDinamicas += apartado.variables.length;
@@ -229,7 +195,6 @@ export async function exportarTablaHTML(
         console.log(`📍 Columnas dinámicas: ${totalColumnasDinamicas}`);
         console.log(`📍 Columnas fijas empiezan en: ${columnaInicioFijas} (${numeroALetra(columnaInicioFijas)})`);
 
-        // Crear encabezados para columnas fijas según imagen 2
         crearColumnasFijasEstructuraImagen2(
             worksheet,
             EXCEL_CONFIG.COLUMNAS_FIJAS,
@@ -243,7 +208,6 @@ export async function exportarTablaHTML(
         console.log("✅ Formato aplicado");
         console.groupEnd();
 
-        // DIAGNÓSTICO 3: Verificar estructura dinámica
         console.group("🔍 EXTRACCIÓN ESTRUCTURA DINÁMICA");
         const estructuraDinamica = extraerEstructuraDinamica(worksheet, estructura);
         console.log(`📊 Estructura dinámica extraída (${estructuraDinamica.length} variables):`);
@@ -259,7 +223,6 @@ export async function exportarTablaHTML(
         }
         console.groupEnd();
 
-        // DIAGNÓSTICO 4: Verificar referencias de población
         console.group("🔍 BUSCANDO REFERENCIAS POBLACIÓN");
         const referenciasPoblacion = obtenerReferenciasPoblacion(worksheet, estructuraDinamica);
         console.log("📍 Referencias población encontradas:", referenciasPoblacion);
@@ -270,31 +233,6 @@ export async function exportarTablaHTML(
             console.log("✅ Referencias población OK");
         }
         console.groupEnd();
-
-        // DIAGNÓSTICO 5: Probar fórmula manualmente ANTES de aplicarlas
-        // console.group("🧪 PRUEBA FÓRMULA MANUAL");
-        // if (estructuraDinamica.length > 0 && Object.keys(referenciasPoblacion).length > 0) {
-        //     // Probar fórmula de BCG
-        //     const formulaTest = obtenerFormulaExcel(
-        //         "% BCG",
-        //         referenciasPoblacion,
-        //         estructuraDinamica
-        //     );
-        //     console.log("🧪 Fórmula '% BCG' obtenida:", formulaTest);
-
-        //     if (formulaTest === '=0') {
-        //         console.error("❌ LA FÓRMULA MANUAL TAMBIÉN RETORNA =0");
-        //         console.log("🔍 Probando fórmula directa desde FORMULAS_LITERALES:");
-        //         console.log("Fórmulas disponibles para '% BCG':", FORMULAS_LITERALES["% BCG"]);
-        //     } else {
-        //         console.log("✅ Fórmula manual OK");
-        //     }
-        // } else {
-        //     console.warn("⚠️ No se puede probar fórmula - estructura o referencias vacías");
-        // }
-        // console.groupEnd();
-
-        // 6. Aplicar fórmulas con mapa
         console.group("🔍 APLICANDO FÓRMULAS CON MAPA");
         aplicarFormulasColumnasFijasConMapa(
             worksheet,
@@ -307,43 +245,12 @@ export async function exportarTablaHTML(
         console.log("✅ Fórmulas con mapa aplicadas");
         console.groupEnd();
 
-        // DIAGNÓSTICO 6: Verificar fórmulas aplicadas
-        // console.group("🔍 VERIFICANDO FÓRMULAS APLICADAS");
-        // if (resultadosConsulta.length > 0) {
-        //     const filaDatos = EXCEL_CONFIG.FILA_INICIO_DATOS;
-        //     console.log(`🔍 Verificando fórmulas en fila ${filaDatos}:`);
-
-        //     // Calcular columna inicial de fórmulas
-        //     let totalColumnasDinamicas = 0;
-        //     estructura.forEach(apartado => {
-        //         totalColumnasDinamicas += apartado.variables.length;
-        //     });
-        //     const columnaInicioFijas = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES + totalColumnasDinamicas;
-
-        //     // Verificar algunas columnas de fórmulas
-        //     for (let i = 0; i < 5; i++) {
-        //         const columna = columnaInicioFijas + i;
-        //         const celda = worksheet.getRow(filaDatos).getCell(columna);
-        //         console.log(`  Col ${columna} (${numeroALetra(columna)}):`, {
-        //             valor: celda.value,
-        //             tipo: typeof celda.value,
-        //             esFormula: celda.value?.formula ? 'SÍ' : 'NO'
-        //         });
-        //     }
-        // }
-        // console.groupEnd();
-
-        // 7. Ajustar anchos de columnas
         console.group("🔍 AJUSTANDO ANCHOS");
         ajustarAnchosColumnas(worksheet, estructura);
         console.log("✅ Anchos ajustados");
         console.groupEnd();
-
-        // 8. Congelar encabezados
         worksheet.views = [{ state: 'frozen', ySplit: 4 }];
         console.log("✅ Encabezados congelados");
-
-        // 9. Descargar archivo
         const nombreArchivo = NOMBRES_ARCHIVOS.EXCEL_RESULTADOS();
         console.log(`💾 Descargando archivo: ${nombreArchivo}`);
 
@@ -355,8 +262,6 @@ export async function exportarTablaHTML(
     } catch (error) {
         console.error('❌ Error al exportar tabla HTML:', error);
         console.error('❌ Stack trace:', error.stack);
-
-        // Mostrar detalles adicionales del error
         if (error.message && error.message.includes('formula')) {
             console.error('🔍 Error relacionado con fórmulas');
         }
@@ -367,35 +272,9 @@ export async function exportarTablaHTML(
         if (typeof ocultarSpinner === 'function') {
             ocultarSpinner();
         }
-        console.groupEnd(); // Cerrar grupo principal si hay error
+        console.groupEnd();
     }
 }
-
-// Función auxiliar para diagnóstico (agregar al archivo)
-function verificarPrimerasFilasExcel(worksheet, numFilas = 5) {
-    console.group("🔍 VERIFICACIÓN PRIMERAS FILAS EXCEL");
-
-    for (let fila = 1; fila <= numFilas; fila++) {
-        console.log(`📊 Fila ${fila}:`);
-        for (let col = 1; col <= Math.min(10, worksheet.columnCount); col++) {
-            try {
-                const celda = worksheet.getRow(fila).getCell(col);
-                const valor = celda.value;
-                if (valor !== undefined && valor !== null && valor !== '') {
-                    console.log(`  Col ${col} (${numeroALetra(col)}): "${valor}"`);
-                }
-            } catch (e) {
-                // Ignorar celdas fuera de rango
-            }
-        }
-    }
-
-    console.groupEnd();
-}
-
-// ===============================
-// FUNCIONES AUXILIARES DE EXPORTACIÓN
-// ===============================
 
 /**
  * Construye la estructura de encabezados a partir de los resultados
@@ -409,8 +288,6 @@ export function construirEstructuraEncabezados(resultadosConsulta) {
         console.warn(MENSAJES.SIN_RESULTADOS);
         return estructura;
     }
-
-    // Tomar el primer resultado como referencia para la estructura
     const primerResultado = resultadosConsulta[0];
 
     if (!primerResultado.biologicos || !Array.isArray(primerResultado.biologicos)) {
@@ -420,8 +297,6 @@ export function construirEstructuraEncabezados(resultadosConsulta) {
 
     primerResultado.biologicos.forEach(apartado => {
         const variables = [];
-
-        // Recolectar todas las variables de este apartado (de todos los grupos)
         if (apartado.grupos && Array.isArray(apartado.grupos)) {
             apartado.grupos.forEach(grupo => {
                 if (grupo.variables && Array.isArray(grupo.variables)) {
@@ -452,32 +327,22 @@ export function construirEstructuraEncabezados(resultadosConsulta) {
  * @param {Array} estructura - Estructura de apartados y variables
  */
 function crearEncabezadosCombinados(worksheet, estructura) {
-    // 1. Crear fila 1: Encabezados principales (apartados en columnas G+)
     const fila1 = ['CLUES', 'Unidad', 'Entidad', 'Jurisdicción', 'Municipio', 'Institución'];
-
-    // Rellenar para columnas variables (apartados)
     estructura.forEach((apartado, index) => {
         for (let i = 0; i < apartado.variables.length; i++) {
-            // Poner el nombre del apartado solo en la primera variable
             if (i === 0) {
                 fila1.push(apartado.nombre);
             } else {
-                fila1.push(''); // Celdas vacías para el resto del mismo apartado
+                fila1.push('');
             }
         }
     });
-
-    // 2. Crear fila 2: Vacía para columnas A-F, también vacía para columnas G+
     const fila2 = ['', '', '', '', '', ''];
-
-    // Para columnas G+, poner vacío (se combinará con fila 1)
     estructura.forEach(apartado => {
         apartado.variables.forEach(() => {
             fila2.push('');
         });
     });
-
-    // 3. Crear fila 3: Variables (vacío para columnas A-F)
     const fila3 = ['', '', '', '', '', ''];
 
     estructura.forEach(apartado => {
@@ -485,8 +350,6 @@ function crearEncabezadosCombinados(worksheet, estructura) {
             fila3.push(variable);
         });
     });
-
-    // 4. Crear fila 4: Variables duplicadas (vacío para columnas A-F)
     const fila4 = ['', '', '', '', '', ''];
 
     estructura.forEach(apartado => {
@@ -495,32 +358,23 @@ function crearEncabezadosCombinados(worksheet, estructura) {
         });
     });
 
-    // 5. Agregar filas al Excel
-    worksheet.addRow(fila1); // Fila 1
-    worksheet.addRow(fila2); // Fila 2
-    worksheet.addRow(fila3); // Fila 3
-    worksheet.addRow(fila4); // Fila 4
-
-    // 6. Combinar celdas para columnas A-F (verticalmente)
+    worksheet.addRow(fila1); 
+    worksheet.addRow(fila2); 
+    worksheet.addRow(fila3); 
+    worksheet.addRow(fila4); 
     for (let col = 1; col <= 6; col++) {
         worksheet.mergeCells(1, col, 4, col);
     }
-
-    // 7. Combinar celdas para apartados (horizontal y verticalmente)
-    let colInicio = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES; // Columna G
+    let colInicio = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES;
 
     estructura.forEach((apartado) => {
         const numVariables = apartado.variables.length;
 
         if (numVariables > 1) {
-            // Combinar apartado en filas 1-2 (2 filas de altura)
             worksheet.mergeCells(1, colInicio, 2, colInicio + numVariables - 1);
         } else {
-            // Si solo tiene una variable, igual combinar verticalmente
             worksheet.mergeCells(1, colInicio, 2, colInicio);
         }
-
-        // Combinar cada variable en filas 3-4 (verticalmente)
         for (let i = 0; i < numVariables; i++) {
             worksheet.mergeCells(3, colInicio + i, 4, colInicio + i);
         }
@@ -543,8 +397,6 @@ function agregarDatosResultados(worksheet, estructura, resultadosConsulta, obten
 
     resultadosConsulta.forEach(r => {
         const filaDatos = [];
-
-        // Información básica (columnas A-F)
         filaDatos.push(
             r.clues || '',
             r.unidad?.nombre || '',
@@ -554,18 +406,14 @@ function agregarDatosResultados(worksheet, estructura, resultadosConsulta, obten
             obtenerInicialesInstitucion ?
                 obtenerInicialesInstitucion(r.unidad?.idinstitucion) || '' : ''
         );
-
-        // Variables por apartado (columnas G en adelante)
         estructura.forEach(apartado => {
-            // Buscar los datos de este apartado para esta CLUES
             const datosApartado = r.biologicos?.find(b => b.apartado === apartado.nombre);
 
             if (datosApartado) {
-                // Para cada variable en la estructura, buscar su valor
+
                 apartado.variables.forEach(variableNombre => {
                     let valor = 0;
-
-                    // Buscar en todos los grupos
+    
                     if (datosApartado.grupos && Array.isArray(datosApartado.grupos)) {
                         for (const grupo of datosApartado.grupos) {
                             if (grupo.variables && Array.isArray(grupo.variables)) {
@@ -581,17 +429,15 @@ function agregarDatosResultados(worksheet, estructura, resultadosConsulta, obten
                     filaDatos.push(valor);
                 });
             } else {
-                // Si no hay datos para este apartado, llenar con ceros
+    
                 apartado.variables.forEach(() => {
                     filaDatos.push(0);
                 });
             }
         });
 
-        // Agregar fila al worksheet
         const row = worksheet.addRow(filaDatos);
 
-        // Aplicar bordes a esta fila de datos
         row.eachCell((cell, colNumber) => {
             cell.border = {
                 top: { style: 'thin' },
@@ -600,8 +446,6 @@ function agregarDatosResultados(worksheet, estructura, resultadosConsulta, obten
                 right: { style: 'thin' }
             },
                 cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-
-            // Alinear números a la derecha para columnas de datos (G en adelante)
             if (colNumber > 6 && typeof cell.value === 'number') {
                 cell.alignment = { horizontal: 'center', vertical: 'middle' };
             }
@@ -619,7 +463,6 @@ function agregarDatosResultados(worksheet, estructura, resultadosConsulta, obten
  * @param {Array} estructura - Estructura de apartados y variables
  */
 function aplicarFormatoEncabezados(worksheet, estructura) {
-    // Formato para columnas A-F (todas combinadas)
     for (let col = 1; col <= 6; col++) {
         const cell = worksheet.getCell(1, col);
         cell.font = {
@@ -644,15 +487,13 @@ function aplicarFormatoEncabezados(worksheet, estructura) {
         };
     }
 
-    // Formato para apartados (combinados en filas 1-2)
+    
     let colInicio = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES;
 
     estructura.forEach((apartado, index) => {
         const numVariables = apartado.variables.length;
         const colorIndex = index % COLORES.APARTADOS.length;
         const color = COLORES.APARTADOS[colorIndex];
-
-        // Apartado (combinado en filas 1-2)
         const cellApartado = worksheet.getCell(1, colInicio);
         cellApartado.font = {
             bold: true,
@@ -675,11 +516,9 @@ function aplicarFormatoEncabezados(worksheet, estructura) {
             bottom: { style: 'thin' },
             right: { style: 'thin' }
         };
-
-        // Formato para variables (combinadas en filas 3-4)
         for (let i = 0; i < numVariables; i++) {
             const cellVariable = worksheet.getCell(3, colInicio + i);
-            const colorVariable = color.replace('FF', 'CC'); // Color más claro
+            const colorVariable = color.replace('FF', 'CC'); 
 
             cellVariable.font = {
                 bold: true,
@@ -707,7 +546,6 @@ function aplicarFormatoEncabezados(worksheet, estructura) {
         colInicio += numVariables;
     });
 
-    // Aplicar bordes a todas las celdas de encabezado
     for (let row = 1; row <= 4; row++) {
         for (let col = 1; col <= worksheet.columnCount; col++) {
             const cell = worksheet.getCell(row, col);
@@ -722,7 +560,6 @@ function aplicarFormatoEncabezados(worksheet, estructura) {
         }
     }
 
-    // Ajustar altura de filas
     worksheet.getRow(1).height = EXCEL_CONFIG.ALTURA_FILAS.ENCABEZADO_1;
     worksheet.getRow(2).height = EXCEL_CONFIG.ALTURA_FILAS.ENCABEZADO_2;
     worksheet.getRow(3).height = EXCEL_CONFIG.ALTURA_FILAS.ENCABEZADO_3;
@@ -737,7 +574,6 @@ function aplicarFormatoEncabezados(worksheet, estructura) {
  * @param {Array} estructura - Estructura de apartados y variables
  */
 function ajustarAnchosColumnas(worksheet, estructura) {
-    // Columnas fijas A-F
     worksheet.getColumn(1).width = EXCEL_CONFIG.ANCHO_COLUMNAS.CLUES;
     worksheet.getColumn(2).width = EXCEL_CONFIG.ANCHO_COLUMNAS.UNIDAD;
     worksheet.getColumn(3).width = EXCEL_CONFIG.ANCHO_COLUMNAS.ENTIDAD;
@@ -745,7 +581,6 @@ function ajustarAnchosColumnas(worksheet, estructura) {
     worksheet.getColumn(5).width = EXCEL_CONFIG.ANCHO_COLUMNAS.MUNICIPIO;
     worksheet.getColumn(6).width = EXCEL_CONFIG.ANCHO_COLUMNAS.INSTITUCION;
 
-    // Columnas de variables
     let currentCol = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES;
     estructura.forEach(apartado => {
         apartado.variables.forEach(() => {
@@ -771,18 +606,12 @@ async function descargarWorkbook(workbook, nombreArchivo) {
         const blob = new Blob([buffer], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         });
-
-        // Crear enlace de descarga
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = nombreArchivo;
-
-        // Agregar al DOM, hacer click y remover
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
-        // Liberar objeto URL
         URL.revokeObjectURL(link.href);
 
         console.log(`✅ Archivo ${nombreArchivo} descargado exitosamente`);
@@ -791,10 +620,6 @@ async function descargarWorkbook(workbook, nombreArchivo) {
         throw error;
     }
 }
-
-// ===============================
-// FUNCIONES DE VALIDACIÓN PARA EXPORTACIÓN
-// ===============================
 
 /**
  * Valida si hay datos suficientes para exportar
@@ -821,7 +646,6 @@ export function validarDatosParaExportar(resultadosConsulta) {
         return resultado;
     }
 
-    // Verificar que al menos un registro tenga datos de biológicos
     resultado.tieneDatos = resultadosConsulta.some(r =>
         r.biologicos &&
         Array.isArray(r.biologicos) &&
@@ -856,8 +680,6 @@ export function generarResumenExportacion(resultadosConsulta) {
     if (!resultadosConsulta || resultadosConsulta.length === 0) {
         return resumen;
     }
-
-    // Contar apartados y variables únicas
     const apartadosSet = new Set();
     const variablesSet = new Set();
 
@@ -893,26 +715,16 @@ export function generarResumenExportacion(resultadosConsulta) {
     return resumen;
 }
 
-// Agregar esta función al final de export.js para pruebas
 export function probarExportacion(resultadosConsulta) {
     console.group("🧪 PRUEBA RÁPIDA EXPORTACIÓN");
 
-    // 1. Verificar datos de entrada
     console.log("📋 Total registros:", resultadosConsulta.length);
 
     if (resultadosConsulta.length > 0) {
         const primerRegistro = resultadosConsulta[0];
         console.log("📋 Primer registro:", primerRegistro);
-
-        // // 2. Extraer códigos
-        // const codigos = extraerCodigosVariables(resultadosConsulta);
-        // console.log("📋 Códigos extraídos:", codigos);
-
-        // 3. Construir estructura
         const estructura = construirEstructuraEncabezados([primerRegistro]);
         console.log("📋 Estructura construida:", estructura);
-
-        // 4. Probar extracción de códigos por variable
         console.log("🔍 Códigos por variable:");
         estructura.forEach(apartado => {
             apartado.variables.forEach(variable => {
@@ -925,23 +737,12 @@ export function probarExportacion(resultadosConsulta) {
     console.groupEnd();
 }
 
-// ===============================
-// EXPORTACIÓN POR DEFECTO
-// ===============================
-
 export default {
-    // Funciones principales
     exportarExcel,
     exportarTablaHTML,
-
-    // Funciones auxiliares
     construirEstructuraEncabezados,
-
-    // Funciones de validación
     validarDatosParaExportar,
     generarResumenExportacion,
-
-    // Re-exportar funciones de excel-formulas
     construirDatosParaExcel,
     construirFilaVariables
 };
