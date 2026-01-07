@@ -362,7 +362,6 @@ export const TIPOS_POBLACION = {
     SEIS_AÑOS: "POBLACIÓN 6 AÑO"
 };
 
-// Mapeo de patrones a tipos de población
 export const MAPEO_POBLACION_POR_VARIABLE = {
     "<1 AÑO": "POBLACIÓN <1 AÑO",
     "MENORES DE 1": "POBLACIÓN <1 AÑO",
