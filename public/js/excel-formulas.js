@@ -1,4 +1,3 @@
-// excel-formulas.js
 import {
     FORMULAS_LITERALES,
     COLORES,
@@ -9,10 +8,6 @@ import {
     REGEX,
     MENSAJES
 } from './constants.js';
-
-// ===============================
-// FUNCIONES AUXILIARES
-// ===============================
 
 /**
  * Convierte un número de columna a letra de Excel (1 -> A, 2 -> B, etc.)
@@ -42,14 +37,8 @@ export function letraANumero(letra) {
     return numero;
 }
 
-// excel-formulas.js
-
-// EN excel-formulas.js, REEMPLAZAR la función obtenerFormulaExcel:
-
 export function obtenerFormulaExcel(nombreVariable, referenciasPoblacion, estructuraDinamica) {
     console.group(`🔍 DEBUG DETALLADO: obtenerFormulaExcel("${nombreVariable}")`);
-    
-    // 1. Verificar que la fórmula existe
     const formulas = FORMULAS_LITERALES[nombreVariable];
     console.log(`📋 Fórmulas disponibles para "${nombreVariable}":`, formulas);
     
@@ -58,8 +47,6 @@ export function obtenerFormulaExcel(nombreVariable, referenciasPoblacion, estruc
         console.groupEnd();
         return '=0';
     }
-
-    // 2. Crear mapa de códigos → columnas
     const mapaCodCol = new Map();
     console.log("📊 Estructura dinámica recibida:", estructuraDinamica);
     
@@ -81,10 +68,8 @@ export function obtenerFormulaExcel(nombreVariable, referenciasPoblacion, estruc
     console.log(`🗺️ Mapa final (${mapaCodCol.size} entradas):`, 
         Array.from(mapaCodCol.entries()));
 
-    // 3. Verificar referencias de población
     console.log("👥 Referencias población disponibles:", referenciasPoblacion);
 
-    // 4. Probar cada fórmula
     for (let i = 0; i < formulas.length; i++) {
         const formulaOriginal = formulas[i];
         console.log(`\n🧪 Probando fórmula ${i + 1}/${formulas.length}: ${formulaOriginal}`);
@@ -101,10 +86,9 @@ export function obtenerFormulaExcel(nombreVariable, referenciasPoblacion, estruc
             if (varNameUpper.startsWith("POBLACION_")) {
                 console.log(`  👥 Buscando población: ${varNameUpper}`);
                 
-                // Buscar en diferentes formatos
                 const posiblesClaves = [
-                    varNameUpper, // "POBLACION_MENOR_1_AÑO"
-                    varNameUpper.replace(/_/g, ' '), // "POBLACION MENOR 1 AÑO"
+                    varNameUpper,
+                    varNameUpper.replace(/_/g, ' '),
                     varNameUpper === "POBLACION_MENOR_1_AÑO" ? "POBLACIÓN <1 AÑO" : null,
                     varNameUpper === "POBLACION_1_AÑO" ? "POBLACIÓN 1 AÑO" : null,
                     varNameUpper === "POBLACION_4_AÑOS" ? "POBLACIÓN 4 AÑO" : null,
@@ -130,7 +114,6 @@ export function obtenerFormulaExcel(nombreVariable, referenciasPoblacion, estruc
                     break;
                 }
             } else {
-                // Es variable BIO/VBC
                 const codigoCorto = varNameUpper.substring(0, 5);
                 console.log(`  🔍 Buscando variable: ${varNameUpper} (${codigoCorto})`);
                 
@@ -149,8 +132,6 @@ export function obtenerFormulaExcel(nombreVariable, referenciasPoblacion, estruc
         
         if (todasExisten) {
             console.log(`🎯 ¡Fórmula ${i + 1} VÁLIDA!`);
-            
-            // Aplicar reemplazos
             let formulaFinal = formulaOriginal;
             const variablesOrdenadas = Object.keys(reemplazos)
                 .sort((a, b) => b.length - a.length);
@@ -191,32 +172,22 @@ export function construirFormulaDesdeVariables(
     estructuraDinamica
 ) {
     const formulasPosibles = FORMULAS_LITERALES[nombreFormula];
-
     if (!formulasPosibles || formulasPosibles.length === 0) {
         console.warn(`⚠️ No hay fórmulas definidas para: ${nombreFormula}`);
         return "=0";
     }
-
-    // 1.  Códigos que SÍ vino del back (primeros 5 caracteres)
     const codigosExistentes = estructuraDinamica
         .flatMap(it => it.codigos || [])
-        .map(c => c.substring(0, 5));          // BIO50 29 DÍAS… → BIO50
-
+        .map(c => c.substring(0, 5));        
     for (const formulaLiteral of formulasPosibles) {
         const variablesEnFormula = extraerVariablesDeFormula(formulaLiteral);
-
-        // 2.  ¿Todos los códigos de la fórmula existen?
         const todosExisten = variablesEnFormula.every(codigo =>
             codigo.startsWith("POBLACION_") || codigosExistentes.includes(codigo)
         );
-
-        if (!todosExisten) continue;           // probar siguiente fórmula
-
-        // 3.  Convertir códigos a columnas Excel
+        if (!todosExisten) continue;           
         let formulaExcel = formulaLiteral;
 
         variablesEnFormula.forEach(varName => {
-            // 3.a  Parámetros de población
             if (varName.startsWith("POBLACION_")) {
                 const col = referenciasPoblacion[varName];
                 if (col) {
@@ -224,8 +195,6 @@ export function construirFormulaDesdeVariables(
                 }
                 return;
             }
-
-            // 3.b  Variables BIO/VBC/…
             const item = estructuraDinamica.find(it =>
                 it.codigos?.some(c => c.substring(0, 5) === varName)
             );
@@ -233,7 +202,6 @@ export function construirFormulaDesdeVariables(
             if (item) {
                 formulaExcel = formulaExcel.replaceAll(varName, `${item.columna}{FILA}`);
             } else {
-                // Si llegó aquí es porque la variable no existe → la anulamos
                 formulaExcel = formulaExcel.replaceAll(varName, "0");
             }
         });
@@ -254,28 +222,18 @@ export function extraerVariablesDeFormula(formula) {
     if (!formula) return [];
     
     console.log(`🔍 Extrayendo variables de: "${formula}"`);
-    
-    // REGEX ESPECÍFICO para los 4 tipos de población que tienes
     const regexPoblacion = /POBLACION_(MENOR_1_AÑO|1_AÑO|4_AÑOS|6_AÑOS)/gi;
     
     const matchesPoblacion = formula.match(regexPoblacion) || [];
     console.log(`📍 Parámetros población encontrados:`, matchesPoblacion);
-    
-    // Extraer variables BIO/VBC
     const regexVariables = /\b(BIO|VBC|VAC|VRV|VTV)\d{2,3}\b/gi;
     const matchesVariables = formula.match(regexVariables) || [];
-    
-    // También extraer variables de 4-5 caracteres (por si acaso)
     const regexVariablesCortas = /\b(BIO|VBC|VAC|VRV|VTV)\d{2}\b/gi;
     const matchesVariablesCortas = formula.match(regexVariablesCortas) || [];
-    
-    // Combinar todas las variables
     const todasVariables = [...matchesVariables, ...matchesVariablesCortas];
     const variablesUnicas = [...new Set(todasVariables)];
     
     console.log(`📍 Variables BIO/VBC encontradas:`, variablesUnicas);
-    
-    // Combinar todo
     const todas = [...matchesPoblacion, ...variablesUnicas];
     const resultado = [...new Set(todas)];
     
@@ -291,7 +249,6 @@ export function extraerVariablesDeFormula(formula) {
  */
 export function extraerCodigosDeVariable(nombreVariable) {
     if (!nombreVariable) return null;
-    // primer código de 5 letras/dígitos que aparezca
     const m = nombreVariable.match(/\b(BIO|VBC|VAC|VRV|VTV)\d{2}\b/);
     return m ? [m[0]] : null;
 }
@@ -303,20 +260,14 @@ export function extraerCodigosDeVariable(nombreVariable) {
  */
 export function determinarTipoPoblacion(nombreVariable) {
     if (!nombreVariable) return TIPOS_POBLACION.MENOR_1_AÑO;
-
-    // Buscar patrones en el nombre de la variable
     for (const [patron, tipo] of Object.entries(MAPEO_POBLACION_POR_VARIABLE)) {
         if (nombreVariable.toUpperCase().includes(patron.toUpperCase())) {
             return tipo;
         }
     }
 
-    return TIPOS_POBLACION.MENOR_1_AÑO; // Por defecto
+    return TIPOS_POBLACION.MENOR_1_AÑO; 
 }
-
-// ===============================
-// FUNCIONES DE ESTRUCTURA DINÁMICA
-// ===============================
 
 /**
  * Extrae la estructura dinámica de variables desde un worksheet
@@ -326,7 +277,7 @@ export function determinarTipoPoblacion(nombreVariable) {
  */
 export function extraerEstructuraDinamica(worksheet, estructura) {
     const estructuraDinamica = [];
-    let columnaActual = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES; // Empieza en columna G (7)
+    let columnaActual = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES; 
 
     console.group("🔍 EXTRACCIÓN ESTRUCTURA DINÁMICA");
     console.log("📋 Estructura recibida:", estructura);
@@ -341,7 +292,6 @@ export function extraerEstructuraDinamica(worksheet, estructura) {
         console.log(`\n📌 Apartado ${apartadoIndex + 1}: "${apartado.nombre}"`);
         
         apartado.variables.forEach((variable, variableIndex) => {
-            // Extraer códigos posibles de la variable
             const codigos = extraerCodigosDeVariable(variable);
             console.log(`  Variable ${variableIndex + 1}: "${variable}" → códigos:`, codigos);
 
@@ -351,7 +301,7 @@ export function extraerEstructuraDinamica(worksheet, estructura) {
                 nombre: variable,
                 codigos: codigos,
                 apartado: apartado.nombre,
-                fila: 3 // Fila donde está el nombre de la variable
+                fila: 3 
             });
 
             columnaActual++;
@@ -367,21 +317,13 @@ export function extraerEstructuraDinamica(worksheet, estructura) {
     return estructuraDinamica;
 }
 
-// EN excel-formulas.js, agregar función:
 export function extraerEstructuraDinamicaConCodigos(worksheet, estructura, codigosVariables) {
     const estructuraDinamica = [];
     let columnaActual = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES;
-
-    // Usar los códigos reales que vienen del back
     const mapaCodigos = new Map();
-
-    // Primero, mapear cada variable a sus posibles códigos
     estructura.forEach(apartado => {
         apartado.variables.forEach(nombreVariable => {
-            // Buscar qué códigos del back corresponden a esta variable
             const codigosParaVariable = codigosVariables.filter(codigo => {
-                // Verificar si el nombre de la variable contiene el código
-                // Ej: "BIO01 29 DÍAS..." contiene "BIO01"
                 return nombreVariable.includes(codigo);
             });
 
@@ -393,8 +335,6 @@ export function extraerEstructuraDinamicaConCodigos(worksheet, estructura, codig
                 apartado: apartado.nombre,
                 fila: 3
             });
-
-            // Mapear cada código a su columna
             codigosParaVariable.forEach(codigo => {
                 mapaCodigos.set(codigo, numeroALetra(columnaActual));
             });
@@ -422,12 +362,8 @@ export function obtenerReferenciasPoblacion(worksheet, estructuraDinamica = null
     const referencias = {};
     
     console.group("🔍 BUSCANDO REFERENCIAS POBLACIÓN");
-    
-    // Verificar columnas de población basadas en EXCEL_CONFIG
     const columnasEsperadas = EXCEL_CONFIG.COLUMNAS_FIJAS.slice(0, 4);
     console.log("📋 Columnas esperadas (primeras 4 de EXCEL_CONFIG):", columnasEsperadas);
-
-    // Buscar nombres exactos en fila 1
     for (let col = 1; col <= worksheet.columnCount; col++) {
         try {
             const cell = worksheet.getRow(1).getCell(col);
@@ -435,15 +371,11 @@ export function obtenerReferenciasPoblacion(worksheet, estructuraDinamica = null
             
             if (valor && valor.trim() !== "") {
                 console.log(`Col ${col} (${numeroALetra(col)}): "${valor}"`);
-                
-                // Buscar coincidencias exactas
                 columnasEsperadas.forEach(columnaConfig => {
                     const nombreEsperado = columnaConfig.nombre;
                     if (valor.toUpperCase().includes(nombreEsperado.toUpperCase())) {
                         const letraColumna = numeroALetra(col);
                         referencias[nombreEsperado] = letraColumna;
-                        
-                        // También agregar clave estándar para fórmulas
                         if (nombreEsperado === "POBLACIÓN <1 AÑO") {
                             referencias["POBLACION_MENOR_1_AÑO"] = letraColumna;
                         } else if (nombreEsperado === "POBLACIÓN 1 AÑO") {
@@ -459,22 +391,14 @@ export function obtenerReferenciasPoblacion(worksheet, estructuraDinamica = null
                 });
             }
         } catch (e) {
-            // Ignorar errores de columna
         }
     }
-
-    // Si no encontró nada, buscar manualmente
     if (Object.keys(referencias).length === 0) {
         console.warn("⚠️ No encontró población en encabezados, usando configuración predeterminada");
-        
-        // Asumir que columnas de población están después de variables dinámicas
         const totalColumnasDinamicas = estructuraDinamica?.length || 0;
         const columnaInicioPoblacion = EXCEL_CONFIG.COLUMNA_INICIO_VARIABLES + totalColumnasDinamicas;
-        
         console.log(`📍 Total columnas dinámicas: ${totalColumnasDinamicas}`);
         console.log(`📍 Columna inicio población: ${columnaInicioPoblacion} (${numeroALetra(columnaInicioPoblacion)})`);
-        
-        // Crear referencias basadas en posición
         const poblaciones = [
             { nombre: "POBLACIÓN <1 AÑO", clave: "POBLACION_MENOR_1_AÑO" },
             { nombre: "POBLACIÓN 1 AÑO", clave: "POBLACION_1_AÑO" },
@@ -508,27 +432,21 @@ export function obtenerReferenciasPoblacion(worksheet, estructuraDinamica = null
  */
 export function convertirFormulaAExcel(formulaLiteral, referenciaPoblacion, estructuraDinamica) {
     let formulaExcel = formulaLiteral;
-
-    // Mapeo de parámetros de población a referencias de columna
     const mapeoPoblacion = {
         "POBLACION_MENOR_1_AÑO": referenciaPoblacion,
         "POBLACION_1_AÑO": referenciaPoblacion,
         "POBLACION_4_AÑOS": referenciaPoblacion,
         "POBLACION_6_AÑOS": referenciaPoblacion
     };
-
-    // Reemplazar variables por referencias de columna
     const variables = extraerVariablesDeFormula(formulaExcel);
 
     variables.forEach(varName => {
-        // Si es variable de población, reemplazar con referencia
         if (mapeoPoblacion[varName]) {
             formulaExcel = formulaExcel.replace(
                 new RegExp(varName, 'g'),
                 `${mapeoPoblacion[varName]}{FILA}`
             );
         }
-        // Si es una variable BIO/VBC, buscar su columna
         else {
             const item = estructuraDinamica.find(item =>
                 item.codigos?.includes(varName) ||
@@ -543,18 +461,12 @@ export function convertirFormulaAExcel(formulaLiteral, referenciaPoblacion, estr
             }
         }
     });
-
-    // Asegurar que la fórmula empiece con =
     if (!formulaExcel.startsWith("=")) {
         formulaExcel = "=" + formulaExcel;
     }
 
     return formulaExcel;
 }
-
-// ===============================
-// FUNCIONES DE CONSTRUCCIÓN DE DATOS
-// ===============================
 
 /**
  * Construye una fila de valores de variables para un resultado
@@ -608,14 +520,10 @@ export function construirDatosParaExcel(resultadosConsulta, obtenerInicialesInst
             institucion: obtenerInicialesInstitucion ?
                 obtenerInicialesInstitucion(r.unidad?.idinstitucion) ?? "" : ""
         };
-
-        // Verificar que tenga biologicos
         if (!r.biologicos || !Array.isArray(r.biologicos)) {
             console.warn(`CLUES ${r.clues} no tiene datos de biológicos`);
             return;
         }
-
-        // biologicos: [{apartado, grupos:[{grupo, variables:[{variable,total}]}]}]
         r.biologicos.forEach(ap => {
             if (!ap.grupos || !Array.isArray(ap.grupos)) return;
 
@@ -638,9 +546,6 @@ export function construirDatosParaExcel(resultadosConsulta, obtenerInicialesInst
     console.log(`📊 Construidos ${filas.length} registros para Excel`);
     return filas;
 }
-// EN excel-formulas.js, agregar:
-
-// EN excel-formulas.js, AGREGAR esta función:
 
 /**
  * Aplica fórmulas a columnas fijas usando mapa completo de códigos
@@ -662,8 +567,6 @@ export function aplicarFormulasColumnasFijasConMapa(
 ) {
     try {
         console.log("🔧 Iniciando aplicarFormulasColumnasFijasConMapa...");
-
-        // 1. Calcular columna de inicio
         let totalColumnasDinamicas = 0;
         estructura.forEach(apartado => {
             totalColumnasDinamicas += apartado.variables.length;
@@ -672,8 +575,6 @@ export function aplicarFormulasColumnasFijasConMapa(
 
         console.log(`📊 Columnas dinámicas: ${totalColumnasDinamicas}`);
         console.log(`📍 Columnas fijas empiezan en: ${columnaInicioFijas}`);
-
-        // 2. Crear mapa códigos → columnas
         const mapaCodCol = new Map();
         estructuraDinamica.forEach(item => {
             if (item.codigos) {
@@ -686,15 +587,12 @@ export function aplicarFormulasColumnasFijasConMapa(
         console.log("🔗 Mapa códigos→columnas:", Object.fromEntries(mapaCodCol));
         console.log("📍 Referencias población:", referenciasPoblacion);
 
-        // 3. DEFINIR COLUMNAS FIJAS CON FÓRMULAS
         const columnasFijasConfig = [
-            // 4 columnas de población (sin fórmulas)
             { tipo: 'poblacion', nombre: 'POBLACIÓN <1 AÑO' },
             { tipo: 'poblacion', nombre: 'POBLACIÓN 1 AÑO' },
             { tipo: 'poblacion', nombre: 'POBLACIÓN 4 AÑO' },
             { tipo: 'poblacion', nombre: 'POBLACIÓN 6 AÑO' },
 
-            // Columnas de fórmulas de cobertura
             { tipo: 'formula', nombre: '% BCG', formulaKey: '% BCG' },
             { tipo: 'formula', nombre: '% Hepatitis B (<1 AÑO)', formulaKey: '% Hepatitis B (<1 AÑO)' },
             { tipo: 'formula', nombre: '% Hexavalente (<1 AÑO)', formulaKey: '% Hexavalente (<1 AÑO)' },
@@ -708,13 +606,11 @@ export function aplicarFormulasColumnasFijasConMapa(
             { tipo: 'formula', nombre: '% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS', formulaKey: '% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS' }
         ];
 
-        // 4. APLICAR FÓRMULAS
         for (let i = 0; i < columnasFijasConfig.length; i++) {
             const config = columnasFijasConfig[i];
             const columnaExcel = columnaInicioFijas + i;
 
             if (config.tipo === 'formula') {
-                // Aplicar fórmula para cada fila de datos
                 for (let fila = filaInicioDatos; fila < filaInicioDatos + resultadosConsulta.length; fila++) {
                     try {
                         const formulaExcel = obtenerFormulaExcel(
@@ -747,29 +643,16 @@ export function aplicarFormulasColumnasFijasConMapa(
     }
 }
 
-
-// ===============================
-// FUNCIÓN PARA CREAR ESTRUCTURA EXACTA DE IMAGEN 2
-// ===============================
-
 export function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, columnaInicioFijas, filaInicioDatos, resultadosConsulta, codigosVariables) {
     console.group("🛠️ Creando estructura EXACTA de imagen 2...");
     
     let columnaActual = columnaInicioFijas;
-
-    // ========== 1. CREAR LAS 4 COLUMNAS DE POBLACIÓN ==========
     console.log("📌 Creando 4 columnas de población...");
     for (let i = 0; i < 4; i++) {
         const columnaConfig = columnasFijas[i];
         const colExcel = columnaActual + i;
-
-        // Nombre en fila 1
         worksheet.getRow(1).getCell(colExcel).value = columnaConfig.nombre;
-
-        // Combinar verticalmente filas 1-4
         worksheet.mergeCells(1, colExcel, 4, colExcel);
-
-        // Aplicar formato
         const cell = worksheet.getRow(1).getCell(colExcel);
         cell.font = { 
             bold: true, 
@@ -792,28 +675,20 @@ export function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, co
             bottom: { style: 'thin' },
             right: { style: 'thin' }
         };
-
-        // Ajustar ancho
         worksheet.getColumn(colExcel).width = columnaConfig.ancho;
 
         console.log(`  ✅ Población ${i + 1}: "${columnaConfig.nombre}" en col ${colExcel}`);
     }
 
     columnaActual += 4;
-
-    // ========== 2. CREAR EL GRUPO "COBERTURA PVU" ==========
-    const grupoCobertura = columnasFijas[4]; // El grupo COBERTURA PVU
+    const grupoCobertura = columnasFijas[4];
     console.log(`📌 Creando grupo: "${grupoCobertura.nombre}"`);
-
-    // Calcular cuántas columnas ocupa COBERTURA PVU
     let totalVariablesCobertura = 0;
     grupoCobertura.subgrupos.forEach(subgrupo => {
         totalVariablesCobertura += subgrupo.variables.length;
     });
 
     const columnaFinCobertura = columnaActual + totalVariablesCobertura - 1;
-
-    // 2.1 TÍTULO PRINCIPAL "COBERTURA PVU" (fila 1, combinando todas las columnas)
     worksheet.mergeCells(1, columnaActual, 1, columnaFinCobertura);
     const tituloCell = worksheet.getRow(1).getCell(columnaActual);
     tituloCell.value = grupoCobertura.nombre;
@@ -839,20 +714,14 @@ export function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, co
     };
 
     console.log(`📌 Título "${grupoCobertura.nombre}" en columnas ${columnaActual} a ${columnaFinCobertura}`);
-
-    // 2.2 CREAR SUBGRUPOS DENTRO DE COBERTURA PVU
     let subgrupoOffset = 0;
     let subgrupoInicio = columnaActual;
 
     grupoCobertura.subgrupos.forEach((subgrupo, subIndex) => {
         const subgrupoColumnas = subgrupo.variables.length;
         const subgrupoFin = subgrupoInicio + subgrupoColumnas - 1;
-
-        // 2.2.1 SUBGRUPOS CON NOMBRE (como "ESQUEMAS POR BIOLÓGICO PARA MENORES DE 1 AÑO")
         if (subgrupo.nombre && subgrupo.nombre.trim() !== "") {
             console.log(`📌 Subgrupo "${subgrupo.nombre}" en columnas ${subgrupoInicio} a ${subgrupoFin}`);
-
-            // Nombre del subgrupo en FILA 2 (combinando las columnas del subgrupo)
             worksheet.mergeCells(2, subgrupoInicio, 2, subgrupoFin);
             const subgrupoCell = worksheet.getRow(2).getCell(subgrupoInicio);
             subgrupoCell.value = subgrupo.nombre;
@@ -877,12 +746,8 @@ export function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, co
                 bottom: { style: 'thin' },
                 right: { style: 'thin' }
             };
-
-            // 2.2.2 VARIABLES DENTRO DEL SUBGRUPO en FILA 3
             subgrupo.variables.forEach((variable, varIndex) => {
                 const colVariable = subgrupoInicio + varIndex;
-                
-                // Nombre de la variable en FILA 3
                 const varCell = worksheet.getRow(3).getCell(colVariable);
                 varCell.value = variable.nombre;
                 varCell.font = { 
@@ -906,26 +771,17 @@ export function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, co
                     bottom: { style: 'thin' },
                     right: { style: 'thin' }
                 };
-
-                // Combinar FILA 3 con FILA 4 para cada variable
                 worksheet.mergeCells(3, colVariable, 4, colVariable);
-
-                // Ajustar ancho
                 worksheet.getColumn(colVariable).width = variable.ancho;
 
                 console.log(`  📊 Variable: "${variable.nombre}" en col ${colVariable}`);
             });
 
         }
-        // 2.2.3 VARIABLES FINALES SIN SUBGRUPO (DPT y SRP)
         else if (subgrupo.variables.length > 0) {
             console.log(`📌 Variables finales sin subgrupo en columnas ${subgrupoInicio} a ${subgrupoFin}`);
-
-            // Variables DPT y SRP van DIRECTAMENTE en FILA 2 (sin subgrupo)
             subgrupo.variables.forEach((variable, varIndex) => {
                 const colVariable = subgrupoInicio + varIndex;
-                
-                // Nombre de la variable en FILA 2
                 const varCell = worksheet.getRow(2).getCell(colVariable);
                 varCell.value = variable.nombre;
                 varCell.font = { 
@@ -949,23 +805,15 @@ export function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, co
                     bottom: { style: 'thin' },
                     right: { style: 'thin' }
                 };
-
-                // Combinar FILAS 2-4 para estas variables
                 worksheet.mergeCells(2, colVariable, 4, colVariable);
-
-                // Ajustar ancho
                 worksheet.getColumn(colVariable).width = variable.ancho;
 
                 console.log(`  📊 Variable final: "${variable.nombre}" en col ${colVariable} (combinada filas 2-4)`);
             });
         }
-
-        // Actualizar posición para siguiente subgrupo
         subgrupoInicio += subgrupoColumnas;
         subgrupoOffset += subgrupoColumnas;
     });
-
-    // ========== 3. APLICAR BORDES A TODAS LAS CELDAS ==========
     console.log("📌 Aplicando bordes a todas las celdas de columnas fijas...");
     for (let col = columnaInicioFijas; col <= columnaFinCobertura; col++) {
         for (let row = 1; row <= 4; row++) {
@@ -980,8 +828,6 @@ export function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, co
             }
         }
     }
-
-    // ========== 4. AJUSTAR ALTURAS DE FILAS ==========
     worksheet.getRow(1).height = 25;
     worksheet.getRow(2).height = 25;
     worksheet.getRow(3).height = 60;
@@ -990,9 +836,6 @@ export function crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, co
     console.log("✅ Estructura de imagen 2 creada exitosamente");
     console.groupEnd();
 }
-// ===============================
-// FUNCIONES DE APLICACIÓN DE FÓRMULAS EN EXCEL
-// ===============================
 
 /**
  * Aplica fórmulas a columnas fijas y CREA las columnas si no existen
@@ -1005,20 +848,14 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
     try {
         console.log("🔧 Iniciando aplicarFormulasColumnasFijas...");
         console.log(`📊 Códigos variables recibidos:`, codigosVariables);
-
-        // 1. Calcular columna de inicio para columnas fijas
         let totalColumnasDinamicas = 0;
         estructura.forEach(apartado => {
             totalColumnasDinamicas += apartado.variables.length;
         });
-        const columnaInicioFijas = 7 + totalColumnasDinamicas; // Columna G (7) + columnas dinámicas
+        const columnaInicioFijas = 7 + totalColumnasDinamicas; 
         console.log(`🔧 Columnas dinámicas: ${totalColumnasDinamicas}, Inicio columnas fijas: columna ${columnaInicioFijas}`);
-
-        // 2. Extraer estructura dinámica y referencias
         const estructuraDinamica = extraerEstructuraDinamicaConCodigos(worksheet, estructura, codigosVariables);
         const referenciasPoblacion = obtenerReferenciasPoblacion(worksheet);
-
-        // 3. VERIFICAR SI LAS COLUMNAS FIJAS YA EXISTEN
         const celdaPrimeraColumnaFija = worksheet.getRow(1).getCell(columnaInicioFijas).value;
         const columnasFijasExisten = celdaPrimeraColumnaFija &&
             (celdaPrimeraColumnaFija.includes("POBLACIÓN") ||
@@ -1026,10 +863,7 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
 
         if (!columnasFijasExisten) {
             console.log("📌 Columnas fijas no existen, creándolas con estructura de imagen 2...");
-
-            // 4. ESTRUCTURA EXACTA DE LA IMAGEN 2
             const columnasFijas = [
-                // COLUMNAS DE POBLACIÓN (4 columnas individuales)
                 {
                     nombre: "POBLACION <1 AÑO",
                     ancho: 15,
@@ -1058,15 +892,12 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
                     color: '902449',
                     tipo: 'poblacion'
                 },
-
-                // GRAN GRUPO "COBERTURA PVU" (todas las columnas de fórmulas)
                 {
                     nombre: "COBERTURA PVU",
                     esGrupo: true,
                     color: 'fef2cb',
                     tipo: 'grupo_principal',
                     subgrupos: [
-                        // SUBGRUPO 1: ESQUEMAS POR BIOLÓGICO PARA MENORES DE 1 AÑO
                         {
                             nombre: "ESQUEMAS POR BIOLOGICO PARA MENORES DE1ANO",
                             color: 'ffc000',
@@ -1104,8 +935,6 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
                                 }
                             ]
                         },
-
-                        // SUBGRUPO 2: ESQUEMAS COMPLETOS POR BIOLÓGICO EN 1 AÑO
                         {
                             nombre: "ESQUEMAS COMPLETOS POR BIOLOGICO EN 1 AÑO",
                             color: '70ad47',
@@ -1137,10 +966,8 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
                                 }
                             ]
                         },
-
-                        // VARIABLES FINALES SIN SUBGRUPO (DPT y SRP)
                         {
-                            nombre: "", // SIN NOMBRE - van dentro del grupo COBERTURA PVU pero sin subgrupo
+                            nombre: "", 
                             color: 'FFB7DEE8',
                             tipo: 'variables_finales',
                             variables: [
@@ -1161,16 +988,12 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
                     ]
                 }
             ];
-
-            // 5. CREAR LAS COLUMNAS FIJAS CON ESTRUCTURA EXACTA
             crearColumnasFijasEstructuraImagen2(worksheet, columnasFijas, columnaInicioFijas, filaInicioDatos, resultadosConsulta);
 
             console.log("✅ Columnas fijas creadas con estructura de imagen 2");
         } else {
             console.log("✅ Columnas fijas ya existen, aplicando fórmulas...");
         }
-
-        // 6. APLICAR FÓRMULAS
         aplicarFormulasAColumnasFijas(worksheet, columnaInicioFijas, filaInicioDatos, resultadosConsulta.length);
 
         console.log("✅ Fórmulas aplicadas exitosamente a columnas fijas!");
@@ -1180,8 +1003,6 @@ export function aplicarFormulasColumnasFijas(worksheet, estructura, filaInicioDa
         throw error;
     }
 }
-
-// EN excel-formulas.js, agregar función:
 export function mapearCodigosAColumnas(codigosVariables, estructuraDinamica) {
     const mapa = new Map();
 
@@ -1199,14 +1020,9 @@ export function mapearCodigosAColumnas(codigosVariables, estructuraDinamica) {
 
     return mapa;
 }
-// ===============================
-// FUNCIÓN PARA APLICAR FÓRMULAS
-// ===============================
 
 function aplicarFormulasAColumnasFijas(worksheet, columnaInicioFijas, filaInicioDatos, totalFilas) {
     console.log(`📝 Aplicando fórmulas a ${totalFilas} filas de datos...`);
-
-    // Mapeo columna → fórmula (basado en tu configuración)
     const columnaFormulas = [
         // POBLACIONES (sin fórmula, solo datos)
         null, // <1 AÑO
@@ -1227,23 +1043,18 @@ function aplicarFormulasAColumnasFijas(worksheet, columnaInicioFijas, filaInicio
         '% ESQUEMA COMPLETO DE DPT EN 4 AÑOS',
         '% ESQUEMA COMPLETO DE SRP 2a EN 6 AÑOS'
     ];
-
-    // Extraer estructura y referencias UNA vez
     const estructuraDinamica = extraerEstructuraDinamica(worksheet, []); // vacío porque ya está creada
     const referenciasPoblacion = obtenerReferenciasPoblacion(worksheet);
 
     for (let fila = filaInicioDatos; fila < filaInicioDatos + totalFilas; fila++) {
         columnaFormulas.forEach((formulaKey, idx) => {
-            if (!formulaKey) return; // saltar columnas de población
+            if (!formulaKey) return; 
 
             const col = columnaInicioFijas + idx;
             try {
-                // 1. quitar "=" inicial y {FILA}
                 let formula = obtenerFormulaExcel(formulaKey, referenciasPoblacion, estructuraDinamica)
                     .replace(/^=/, '')
                     .replace(/{FILA}/g, fila);
-
-                // 2. poblaciones: clave = marcador que VIENE, valor = clave en referenciasPoblacion
                 const poblacionMap = {
                     'POBLACION_MENOR_1_AÑO': 'POBLACIÓN <1 AÑO',
                     'POBLACION_1_AÑO': 'POBLACIÓN 1 AÑO',
@@ -1282,121 +1093,6 @@ function aplicarFormulasAColumnasFijas(worksheet, columnaInicioFijas, filaInicio
     console.log("✅ Fórmulas aplicadas");
 }
 
-// ===============================
-// FUNCIONES AUXILIARES
-// ===============================
-
-/**
- * Crea las columnas fijas en el worksheet
- */
-function crearColumnasFijas(worksheet, columnasFijas, columnaInicioFijas, filaInicioDatos, resultadosConsulta) {
-    let columnaActual = columnaInicioFijas;
-
-    // Contar total de columnas que ocuparán las columnas fijas
-    let totalColumnasFijas = 0;
-    columnasFijas.forEach(columna => {
-        if (columna.esGrupo) {
-            columna.subgrupos.forEach(subgrupo => {
-                totalColumnasFijas += subgrupo.variables.length;
-            });
-        } else {
-            totalColumnasFijas += 1;
-        }
-    });
-
-    console.log(`🔧 Total columnas fijas a crear: ${totalColumnasFijas}`);
-
-    // Crear estructura de encabezados
-    const encabezadosFilas = {
-        fila1: Array(totalColumnasFijas).fill(''),
-        fila2: Array(totalColumnasFijas).fill(''),
-        fila3: Array(totalColumnasFijas).fill(''),
-        fila4: Array(totalColumnasFijas).fill('')
-    };
-
-    // Llenar la estructura con nombres
-    let columnaOffset = 0;
-    columnasFijas.forEach(columna => {
-        if (columna.esGrupo) {
-            let totalVariablesEnGrupo = 0;
-            columna.subgrupos.forEach(subgrupo => {
-                totalVariablesEnGrupo += subgrupo.variables.length;
-            });
-
-            // Nombre del grupo en fila 1
-            for (let i = 0; i < totalVariablesEnGrupo; i++) {
-                encabezadosFilas.fila1[columnaOffset + i] = columna.nombre;
-            }
-
-            // Procesar cada subgrupo
-            let subgrupoOffset = 0;
-            columna.subgrupos.forEach((subgrupo, subgrupoIndex) => {
-                // Nombre del subgrupo en fila 2 (solo si tiene nombre)
-                if (subgrupo.nombre && subgrupo.nombre.trim() !== "") {
-                    for (let i = 0; i < subgrupo.variables.length; i++) {
-                        encabezadosFilas.fila2[columnaOffset + subgrupoOffset + i] = subgrupo.nombre;
-                    }
-                }
-
-                // Variables
-                subgrupo.variables.forEach((variable, varIndex) => {
-                    if (subgrupo.nombre && subgrupo.nombre.trim() !== "") {
-                        // Subgrupos CON nombre: variables en fila 3
-                        encabezadosFilas.fila3[columnaOffset + subgrupoOffset + varIndex] = variable.nombre;
-                    } else {
-                        // Subgrupos SIN nombre: variables en fila 2
-                        encabezadosFilas.fila2[columnaOffset + subgrupoOffset + varIndex] = variable.nombre;
-                    }
-                });
-
-                subgrupoOffset += subgrupo.variables.length;
-            });
-
-            columnaOffset += totalVariablesEnGrupo;
-        } else {
-            // Columnas simples
-            encabezadosFilas.fila1[columnaOffset] = columna.nombre;
-            columnaOffset++;
-        }
-    });
-
-    // Agregar encabezados al worksheet
-    for (let i = 0; i < totalColumnasFijas; i++) {
-        const columnaExcel = columnaInicioFijas + i;
-
-        worksheet.getRow(1).getCell(columnaExcel).value = encabezadosFilas.fila1[i] || '';
-        worksheet.getRow(2).getCell(columnaExcel).value = encabezadosFilas.fila2[i] || '';
-        worksheet.getRow(3).getCell(columnaExcel).value = encabezadosFilas.fila3[i] || '';
-        worksheet.getRow(4).getCell(columnaExcel).value = encabezadosFilas.fila4[i] || '';
-
-        // Ajustar ancho
-        worksheet.getColumn(columnaExcel).width = 15;
-    }
-
-    // Combinar celdas y aplicar formato básico
-    // (Aquí puedes añadir la lógica de combinación y colores si es necesario)
-
-    console.log("✅ Estructura de columnas fijas creada");
-}
-
-/**
- * Aplica fórmulas a las columnas fijas existentes
- */
-function aplicarFormulasAColumnasFijasExistentes(worksheet, columnaInicioFijas, filaInicioDatos, totalFilas) {
-    // Extraer estructura dinámica actualizada
-    // (Necesitarías recalcular estructuraDinamica y referenciasPoblacion)
-
-    // Aquí iría la lógica para aplicar fórmulas a cada columna fija
-    // Basada en los nombres de las columnas que encuentre
-
-    for (let fila = filaInicioDatos; fila < filaInicioDatos + totalFilas; fila++) {
-        // Ejemplo: Aplicar fórmula a la primera columna de cobertura
-        const columnaCobertura = columnaInicioFijas + 4; // Después de las 4 de población
-    }
-
-    console.log(`✅ Fórmulas aplicadas a ${totalFilas} filas`);
-}
-
 /**
  * Aplica fórmulas de plantilla a un worksheet
  * @param {Object} worksheet - Worksheet de ExcelJS
@@ -1415,10 +1111,7 @@ export function aplicarFormulasPlantilla(
 
         resultadosConsulta.forEach((r, index) => {
             const fila = filaInicio + index;
-
-            // Aplicar fórmulas predefinidas
             Object.entries(EXCEL_CONFIG.FORMULAS_PLANTILLA).forEach(([col, formula]) => {
-                // Reemplazar TODAS las @ por el número de fila
                 const formulaFinal = formula.replace(REGEX.MARCADOR_FILA, fila);
 
                 const cell = worksheet.getCell(`${col}${fila}`);
@@ -1429,8 +1122,6 @@ export function aplicarFormulasPlantilla(
                 console.log(`📊 Celda ${col}${fila} -> Fórmula: ${formulaFinal}`);
                 console.log(`📊 Tipo de asignación:`, typeof cell.value, cell.value);
             });
-
-            // Aplicar fórmulas específicas adicionales si es necesario
             aplicarFormulasEspecificas(worksheet, r, fila, obtenerInicialesInstitucion);
         });
 
@@ -1441,10 +1132,6 @@ export function aplicarFormulasPlantilla(
     }
 }
 
-// ===============================
-// FUNCIONES DE VALIDACIÓN DE FÓRMULAS
-// ===============================
-
 /**
  * Valida si una fórmula es sintácticamente correcta
  * @param {string} formula - Fórmula a validar
@@ -1454,13 +1141,9 @@ export function validarFormula(formula) {
     if (!formula || typeof formula !== 'string') {
         return false;
     }
-
-    // Verificar que comience con =
     if (!formula.startsWith('=')) {
         return false;
     }
-
-    // Verificar paréntesis balanceados
     const parentesis = formula.split('').filter(c => c === '(' || c === ')');
     let balance = 0;
 
@@ -1470,8 +1153,6 @@ export function validarFormula(formula) {
     }
 
     if (balance !== 0) return false;
-
-    // Verificar que no tenga errores obvios
     const erroresObvios = [
         '##',
         '#¡VALOR!',
@@ -1504,7 +1185,6 @@ export function verificarVariablesFormula(formula, estructuraDinamica) {
     };
 
     variables.forEach(varName => {
-        // Ignorar parámetros de población
         if (varName.startsWith("POBLACION_")) {
             resultado.variablesEncontradas.push({
                 nombre: varName,
@@ -1513,8 +1193,6 @@ export function verificarVariablesFormula(formula, estructuraDinamica) {
             });
             return;
         }
-
-        // Buscar en estructura dinámica
         const encontrada = estructuraDinamica.some(item =>
             item.codigos?.includes(varName) ||
             item.nombre?.toUpperCase().includes(varName)
@@ -1539,11 +1217,6 @@ export function verificarVariablesFormula(formula, estructuraDinamica) {
 
     return resultado;
 }
-
-// ===============================
-// FUNCIONES DE DEPURACIÓN
-// ===============================
-
 /**
  * Genera un reporte de depuración de fórmulas
  * @param {Array} estructuraDinamica - Estructura dinámica de variables
@@ -1559,8 +1232,6 @@ export function generarReporteDepuracion(estructuraDinamica, referenciasPoblacio
         formulasDisponibles: {},
         problemas: []
     };
-
-    // Agrupar variables por apartado
     estructuraDinamica.forEach(item => {
         if (!reporte.variablesPorApartado[item.apartado]) {
             reporte.variablesPorApartado[item.apartado] = [];
@@ -1571,8 +1242,6 @@ export function generarReporteDepuracion(estructuraDinamica, referenciasPoblacio
             codigos: item.codigos
         });
     });
-
-    // Verificar fórmulas disponibles para cada variable
     estructuraDinamica.forEach(item => {
         const nombreVariable = item.nombre;
         const formulas = FORMULAS_LITERALES[nombreVariable];
@@ -1587,7 +1256,6 @@ export function generarReporteDepuracion(estructuraDinamica, referenciasPoblacio
         }
     });
     console.log('🔧 obtenerFormulaExcel ejecutada con', nombreVariable, formulaExcel);
-    // Verificar referencias de población
     Object.entries(TIPOS_POBLACION).forEach(([key, tipo]) => {
         if (!referenciasPoblacion[tipo]) {
             reporte.problemas.push(`Falta referencia para: ${tipo}`);
@@ -1598,41 +1266,23 @@ export function generarReporteDepuracion(estructuraDinamica, referenciasPoblacio
     return reporte;
 }
 
-// ===============================
-// EXPORTACIÓN POR DEFECTO
-// ===============================
-
 export default {
-    // Funciones auxiliares
     numeroALetra,
     letraANumero,
     extraerVariablesDeFormula,
     extraerCodigosDeVariable,
     determinarTipoPoblacion,
     crearColumnasFijasEstructuraImagen2,
-
-    // Funciones de estructura dinámica
     extraerEstructuraDinamica,
     obtenerReferenciasPoblacion,
-
-    // Funciones de construcción de fórmulas
-    // construirFormulaLiteral,
     convertirFormulaAExcel,
-
-    // Funciones de construcción de datos
     construirFilaVariables,
     construirDatosParaExcel,
     obtenerFormulaExcel,
-
-    // Funciones de aplicación de fórmulas
     aplicarFormulasColumnasFijas,
     aplicarFormulasPlantilla,
     aplicarFormulasColumnasFijasConMapa,
-
-    // Funciones de validación
     validarFormula,
     verificarVariablesFormula,
-
-    // Funciones de depuración
     generarReporteDepuracion
 };
