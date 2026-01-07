@@ -1,11 +1,4 @@
-// state.js
-
-// ===============================
-// ESTADO GLOBAL DE LA APLICACIÓN
-// ===============================
-
 let state = {
-    // Configuración de API
     api: {
         laravel: "/consultar-biologicos",
         fastapi: "http://127.0.0.1:8080",
@@ -16,23 +9,18 @@ let state = {
             ultimaVerificacion: null
         }
     },
-    
-    // Catálogos y cubos
     catalogos: {
         disponibles: [],
         seleccionado: null,
         cargando: false,
         error: null
     },
-    
     cubos: {
         disponibles: [],
         activo: null,
         metadatos: null,
         cargando: false
     },
-    
-    // CLUES
     clues: {
         disponibles: [],
         seleccionadas: [],
@@ -41,15 +29,11 @@ let state = {
         cargando: false,
         error: null
     },
-    
-    // Instituciones
     instituciones: {
         catalogo: [],
         cargando: false,
         error: null
     },
-    
-    // Consulta de biológicos
     consulta: {
         resultados: [],
         metadata: {
@@ -61,12 +45,10 @@ let state = {
         },
         cargando: false,
         error: null,
-        estructura: [] // Estructura de apartados y variables
+        estructura: []
     },
-    
-    // Exportación
     exportacion: {
-        formato: 'excel', // 'excel', 'html', 'csv', 'json'
+        formato: 'excel',
         enProgreso: false,
         ultimoArchivo: null,
         error: null,
@@ -76,34 +58,28 @@ let state = {
             incluirColores: true
         }
     },
-    
-    // Interfaz de usuario
     ui: {
         spinnerVisible: false,
         resultadosVisible: false,
         mensajes: [],
         notificaciones: [],
-        tema: 'claro', // 'claro', 'oscuro'
+        tema: 'claro',
         idioma: 'es'
     },
-    
-    // Cache
     cache: {
         catalogos: {
             datos: null,
             timestamp: null,
-            ttl: 3600000 // 1 hora en milisegundos
+            ttl: 3600000
         },
         instituciones: {
             datos: null,
             timestamp: null,
-            ttl: 86400000 // 24 horas
+            ttl: 86400000
         },
-        clues: new Map(), // Cache por catálogo y cubo
-        resultados: new Map() // Cache por parámetros de consulta
+        clues: new Map(),
+        resultados: new Map()
     },
-    
-    // Configuración del usuario
     configuracion: {
         autoCargarClues: true,
         mostrarResumen: true,
@@ -113,39 +89,27 @@ let state = {
         columnasVisibles: [],
         ordenColumnas: []
     },
-    
-    // Historial
     historial: {
         consultas: [],
         exportaciones: [],
         maxRegistros: 100
     },
-    
-    // Sesión
     sesion: {
         id: null,
         inicio: null,
         ultimaActividad: null,
         parametrosGuardados: []
     },
-    
-    // Debug
     debug: {
         logs: [],
         errores: [],
-        nivel: 'debug', // Siempre en modo debug
-        habilitado: true, // Siempre habilitado
-        // nivel: process.env.NODE_ENV === 'development' ? 'debug' : 'error',
-        // habilitado: process.env.NODE_ENV === 'development'
+        nivel: 'debug',
+        habilitado: true,
     }
 };
 
-// ===============================
-// GETTERS (para acceso controlado)
-// ===============================
 
 export const getState = () => ({ ...state });
-
 export const getApiConfig = () => ({ ...state.api });
 export const getCatalogos = () => ({ ...state.catalogos });
 export const getCuboActivo = () => state.cubos.activo;
@@ -157,46 +121,33 @@ export const getEstructuraConsulta = () => [...state.consulta.estructura];
 export const getMetadataConsulta = () => ({ ...state.consulta.metadata });
 export const getUIConfig = () => ({ ...state.ui });
 export const getUserConfig = () => ({ ...state.configuracion });
-
-// ===============================
-// SETTERS (para modificación controlada)
-// ===============================
-
 export const setCatalogos = (catalogos) => {
     state.catalogos.disponibles = Array.isArray(catalogos) ? catalogos : [];
     state.catalogos.cargando = false;
     state.catalogos.error = null;
-    
-    // Actualizar cache
     state.cache.catalogos = {
         datos: catalogos,
         timestamp: Date.now(),
         ttl: 3600000
     };
-    
     logStateChange('Catalogos actualizados', { cantidad: catalogos.length });
 };
-
 export const setCatalogoSeleccionado = (catalogo) => {
     state.catalogos.seleccionado = catalogo;
     logStateChange('Catálogo seleccionado', { catalogo });
 };
-
 export const setCuboActivo = (cubo) => {
     state.cubos.activo = cubo;
     logStateChange('Cubo activo establecido', { cubo });
 };
-
 export const setMetadatosCubo = (metadatos) => {
     state.cubos.metadatos = metadatos;
     logStateChange('Metadatos de cubo actualizados', { cubo: state.cubos.activo });
 };
-
 export const setCluesDisponibles = (clues) => {
     state.clues.disponibles = Array.isArray(clues) ? clues : [];
     state.clues.cargando = false;
     state.clues.error = null;
-    
     logStateChange('CLUES disponibles actualizadas', { cantidad: clues.length });
 };
 
@@ -214,13 +165,9 @@ export const setResultadosConsulta = (resultados, metadata = {}) => {
     };
     state.consulta.cargando = false;
     state.consulta.error = null;
-    
-    // Generar estructura de la consulta
     if (resultados.length > 0) {
         state.consulta.estructura = generarEstructuraDesdeResultados(resultados);
     }
-    
-    // Agregar al historial
     agregarAlHistorial('consulta', {
         fecha: new Date().toISOString(),
         catalogo: state.catalogos.seleccionado,
@@ -228,8 +175,7 @@ export const setResultadosConsulta = (resultados, metadata = {}) => {
         clues: state.clues.seleccionadas.length,
         resultados: resultados.length
     });
-    
-    logStateChange('Resultados de consulta actualizados', { 
+    logStateChange('Resultados de consulta actualizados', {
         cantidad: resultados.length,
         catalogo: state.catalogos.seleccionado
     });
@@ -239,14 +185,11 @@ export const setInstitucionesCatalogo = (instituciones) => {
     state.instituciones.catalogo = Array.isArray(instituciones) ? instituciones : [];
     state.instituciones.cargando = false;
     state.instituciones.error = null;
-    
-    // Actualizar cache
     state.cache.instituciones = {
         datos: instituciones,
         timestamp: Date.now(),
         ttl: 86400000
     };
-    
     logStateChange('Instituciones actualizadas', { cantidad: instituciones.length });
 };
 
@@ -254,7 +197,6 @@ export const setConectividad = (tipo, estado) => {
     if (tipo === 'laravel' || tipo === 'fastapi') {
         state.api.conectividad[tipo] = estado;
         state.api.conectividad.ultimaVerificacion = new Date().toISOString();
-        
         logStateChange(`Conectividad ${tipo} actualizada`, { estado });
     }
 };
@@ -268,7 +210,7 @@ export const setCargando = (modulo, estado) => {
         consulta: () => state.consulta.cargando = estado,
         exportacion: () => state.exportacion.enProgreso = estado
     };
-    
+
     if (modulos[modulo]) {
         modulos[modulo]();
         logStateChange(`Estado de carga ${modulo} actualizado`, { estado });
@@ -283,7 +225,6 @@ export const setError = (modulo, error) => {
         consulta: () => state.consulta.error = error,
         exportacion: () => state.exportacion.error = error
     };
-    
     if (modulos[modulo]) {
         modulos[modulo]();
         logStateChange(`Error en ${modulo}`, { error: error?.message || error });
@@ -296,7 +237,7 @@ export const setUIVisible = (elemento, visible) => {
     } else if (elemento === 'resultados') {
         state.ui.resultadosVisible = visible;
     }
-    
+
     logStateChange(`UI ${elemento} visible`, { visible });
 };
 
@@ -305,41 +246,30 @@ export const setUserConfig = (config) => {
         ...state.configuracion,
         ...config
     };
-    
     logStateChange('Configuración de usuario actualizada');
 };
-
-// ===============================
-// FUNCIONES DE GESTIÓN DE CACHE
-// ===============================
 
 export const getCacheCatalogos = () => {
     const cache = state.cache.catalogos;
     if (!cache.datos || !cache.timestamp) return null;
-    
     const ahora = Date.now();
     const expirado = ahora - cache.timestamp > cache.ttl;
-    
     if (expirado) {
         state.cache.catalogos = { datos: null, timestamp: null, ttl: 3600000 };
         return null;
     }
-    
     return cache.datos;
 };
 
 export const getCacheInstituciones = () => {
     const cache = state.cache.instituciones;
     if (!cache.datos || !cache.timestamp) return null;
-    
     const ahora = Date.now();
     const expirado = ahora - cache.timestamp > cache.ttl;
-    
     if (expirado) {
         state.cache.instituciones = { datos: null, timestamp: null, ttl: 86400000 };
         return null;
     }
-    
     return cache.datos;
 };
 
@@ -353,9 +283,8 @@ export const setCacheClues = (catalogo, cubo, clues) => {
     state.cache.clues.set(clave, {
         datos: clues,
         timestamp: Date.now(),
-        ttl: 1800000 // 30 minutos
+        ttl: 1800000
     });
-    
     logStateChange('CLUES agregadas al cache', { clave, cantidad: clues.length });
 };
 
@@ -369,9 +298,8 @@ export const setCacheResultados = (params, resultados) => {
     state.cache.resultados.set(clave, {
         datos: resultados,
         timestamp: Date.now(),
-        ttl: 300000 // 5 minutos
+        ttl: 300000
     });
-    
     logStateChange('Resultados agregados al cache', { clave, cantidad: resultados.length });
 };
 
@@ -379,25 +307,18 @@ export const limpiarCache = (tipo = 'todos') => {
     if (tipo === 'todos' || tipo === 'catalogos') {
         state.cache.catalogos = { datos: null, timestamp: null, ttl: 3600000 };
     }
-    
     if (tipo === 'todos' || tipo === 'instituciones') {
         state.cache.instituciones = { datos: null, timestamp: null, ttl: 86400000 };
     }
-    
     if (tipo === 'todos' || tipo === 'clues') {
         state.cache.clues.clear();
     }
-    
     if (tipo === 'todos' || tipo === 'resultados') {
         state.cache.resultados.clear();
     }
-    
     logStateChange('Cache limpiado', { tipo });
 };
 
-// ===============================
-// FUNCIONES DE HISTORIAL
-// ===============================
 
 export const agregarAlHistorial = (tipo, datos) => {
     const entrada = {
@@ -406,22 +327,21 @@ export const agregarAlHistorial = (tipo, datos) => {
         datos,
         timestamp: new Date().toISOString()
     };
-    
+
     if (tipo === 'consulta') {
         state.historial.consultas.unshift(entrada);
-        
-        // Mantener solo el número máximo de registros
+
         if (state.historial.consultas.length > state.historial.maxRegistros) {
             state.historial.consultas.pop();
         }
     } else if (tipo === 'exportacion') {
         state.historial.exportaciones.unshift(entrada);
-        
+
         if (state.historial.exportaciones.length > state.historial.maxRegistros) {
             state.historial.exportaciones.pop();
         }
     }
-    
+
     logStateChange('Entrada agregada al historial', { tipo, id: entrada.id });
 };
 
@@ -431,7 +351,6 @@ export const getHistorial = (tipo = 'todos') => {
     } else if (tipo === 'exportaciones') {
         return [...state.historial.exportaciones];
     }
-    
     return {
         consultas: [...state.historial.consultas],
         exportaciones: [...state.historial.exportaciones]
@@ -442,23 +361,16 @@ export const limpiarHistorial = (tipo = 'todos') => {
     if (tipo === 'todos' || tipo === 'consultas') {
         state.historial.consultas = [];
     }
-    
     if (tipo === 'todos' || tipo === 'exportaciones') {
         state.historial.exportaciones = [];
     }
-    
     logStateChange('Historial limpiado', { tipo });
 };
-
-// ===============================
-// FUNCIONES DE SESIÓN
-// ===============================
 
 export const iniciarSesion = () => {
     state.sesion.id = `sesion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     state.sesion.inicio = new Date().toISOString();
     state.sesion.ultimaActividad = new Date().toISOString();
-    
     logStateChange('Sesión iniciada', { id: state.sesion.id });
 };
 
@@ -468,19 +380,18 @@ export const actualizarActividad = () => {
 
 export const guardarParametros = (nombre, parametros) => {
     const existenteIndex = state.sesion.parametrosGuardados.findIndex(p => p.nombre === nombre);
-    
     const parametro = {
         nombre,
         parametros,
         timestamp: new Date().toISOString()
     };
-    
+
     if (existenteIndex >= 0) {
         state.sesion.parametrosGuardados[existenteIndex] = parametro;
     } else {
         state.sesion.parametrosGuardados.push(parametro);
     }
-    
+
     logStateChange('Parámetros guardados', { nombre });
 };
 
@@ -488,13 +399,9 @@ export const getParametrosGuardados = (nombre = null) => {
     if (nombre) {
         return state.sesion.parametrosGuardados.find(p => p.nombre === nombre);
     }
-    
     return [...state.sesion.parametrosGuardados];
 };
 
-// ===============================
-// FUNCIONES DE UTILIDAD
-// ===============================
 
 export const resetearEstado = (modulo = 'todos') => {
     const resetModulos = {
@@ -526,13 +433,11 @@ export const resetearEstado = (modulo = 'todos') => {
             state.ui.mensajes = [];
         }
     };
-    
     if (modulo === 'todos') {
         Object.values(resetModulos).forEach(reset => reset());
     } else if (resetModulos[modulo]) {
         resetModulos[modulo]();
     }
-    
     logStateChange('Estado reseteado', { modulo });
 };
 
@@ -540,17 +445,13 @@ export const generarEstructuraDesdeResultados = (resultados) => {
     if (!resultados || resultados.length === 0) {
         return [];
     }
-    
     const primerResultado = resultados[0];
     const estructura = [];
-    
     if (!primerResultado.biologicos) {
         return estructura;
     }
-    
     primerResultado.biologicos.forEach(apartado => {
         const variables = [];
-        
         if (apartado.grupos) {
             apartado.grupos.forEach(grupo => {
                 if (grupo.variables) {
@@ -562,7 +463,7 @@ export const generarEstructuraDesdeResultados = (resultados) => {
                 }
             });
         }
-        
+
         if (variables.length > 0) {
             estructura.push({
                 nombre: apartado.apartado || 'Sin nombre',
@@ -570,37 +471,30 @@ export const generarEstructuraDesdeResultados = (resultados) => {
             });
         }
     });
-    
     return estructura;
 };
 
 export const obtenerInicialesInstitucion = (id) => {
     if (!id) return "";
-    
     const idFixed = id.toString().padStart(2, "0");
     const institucion = state.instituciones.catalogo.find(
         i => i.idinstitucion.toString().padStart(2, "0") === idFixed
     );
-    
     return institucion ? institucion.iniciales : "";
 };
 
 export const agregarMensajeUI = (tipo, contenido) => {
     const mensaje = {
         id: Date.now(),
-        tipo, // 'info', 'success', 'warning', 'error'
+        tipo,
         contenido,
         timestamp: new Date().toISOString(),
         leido: false
     };
-    
     state.ui.mensajes.unshift(mensaje);
-    
-    // Mantener solo los últimos 50 mensajes
     if (state.ui.mensajes.length > 50) {
         state.ui.mensajes.pop();
     }
-    
     logStateChange('Mensaje UI agregado', { tipo, id: mensaje.id });
 };
 
@@ -609,27 +503,19 @@ export const limpiarMensajesUI = () => {
     logStateChange('Mensajes UI limpiados');
 };
 
-// ===============================
-// FUNCIONES DE LOG Y DEBUG
-// ===============================
-
 const logStateChange = (accion, datos = {}) => {
     if (!state.debug.habilitado) return;
-    
+
     const logEntry = {
         timestamp: new Date().toISOString(),
         accion,
         datos,
         estadoSnapshot: getSnapshotReducido()
     };
-    
     state.debug.logs.unshift(logEntry);
-    
-    // Mantener solo los últimos 100 logs
     if (state.debug.logs.length > 100) {
         state.debug.logs.pop();
     }
-    
     if (state.debug.nivel === 'debug') {
         console.log(`[State] ${accion}`, datos);
     }
@@ -643,14 +529,10 @@ export const agregarErrorDebug = (error, contexto = {}) => {
         stack: error?.stack,
         contexto
     };
-    
     state.debug.errores.unshift(errorEntry);
-    
-    // Mantener solo los últimos 50 errores
     if (state.debug.errores.length > 50) {
         state.debug.errores.pop();
     }
-    
     console.error(`[State Error] ${errorEntry.error}`, { contexto });
 };
 
@@ -699,24 +581,12 @@ const generarClaveCache = (params) => {
     });
 };
 
-// ===============================
-// INICIALIZACIÓN
-// ===============================
-
-// Iniciar sesión automáticamente
 iniciarSesion();
-
-// Configurar intervalo para actualizar actividad
 setInterval(() => {
     actualizarActividad();
-}, 300000); // Cada 5 minutos
-
-// ===============================
-// EXPORTACIÓN POR DEFECTO
-// ===============================
+}, 300000);
 
 export default {
-    // Getters
     getState,
     getApiConfig,
     getCatalogos,
@@ -729,8 +599,6 @@ export default {
     getMetadataConsulta,
     getUIConfig,
     getUserConfig,
-    
-    // Setters
     setCatalogos,
     setCatalogoSeleccionado,
     setCuboActivo,
@@ -744,8 +612,6 @@ export default {
     setError,
     setUIVisible,
     setUserConfig,
-    
-    // Cache
     getCacheCatalogos,
     getCacheInstituciones,
     getCacheClues,
@@ -753,26 +619,18 @@ export default {
     getCacheResultados,
     setCacheResultados,
     limpiarCache,
-    
-    // Historial
     agregarAlHistorial,
     getHistorial,
     limpiarHistorial,
-    
-    // Sesión
     iniciarSesion,
     actualizarActividad,
     guardarParametros,
     getParametrosGuardados,
-    
-    // Utilidades
     resetearEstado,
     generarEstructuraDesdeResultados,
     obtenerInicialesInstitucion,
     agregarMensajeUI,
     limpiarMensajesUI,
-    
-    // Debug
     agregarErrorDebug,
     getLogs,
     getErrores,
