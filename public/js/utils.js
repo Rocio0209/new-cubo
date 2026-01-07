@@ -1,18 +1,7 @@
-// utils.js
 import { 
-    MENSAJES,
     CLASES_CSS
 } from './constants.js';
-
-// ===============================
-// VARIABLES GLOBALES
-// ===============================
-
 let institucionesCatalogo = [];
-
-// ===============================
-// FUNCIONES DE MANEJO DE SPINNER
-// ===============================
 
 /**
  * Muestra el spinner de carga
@@ -48,7 +37,6 @@ export function ocultarSpinner(spinnerElement = null) {
  * @returns {HTMLElement} El elemento spinner creado
  */
 export function mostrarSpinnerFlotante(mensaje = 'Cargando...') {
-    // Crear contenedor
     const spinnerContainer = document.createElement('div');
     spinnerContainer.id = 'spinner-flotante';
     spinnerContainer.className = 'spinner-flotante';
@@ -65,20 +53,14 @@ export function mostrarSpinnerFlotante(mensaje = 'Cargando...') {
         z-index: 9999;
         flex-direction: column;
     `;
-    
-    // Crear spinner
     const spinner = document.createElement('div');
     spinner.className = 'spinner-border text-light';
     spinner.style.cssText = 'width: 3rem; height: 3rem;';
     spinner.setAttribute('role', 'status');
-    
-    // Crear mensaje
     const texto = document.createElement('p');
     texto.className = 'text-light mt-3';
     texto.textContent = mensaje;
     texto.style.cssText = 'font-size: 1.2rem;';
-    
-    // Ensamblar
     spinnerContainer.appendChild(spinner);
     spinnerContainer.appendChild(texto);
     document.body.appendChild(spinnerContainer);
@@ -99,10 +81,6 @@ export function ocultarSpinnerFlotante(spinnerContainer = null) {
         console.log('✅ Spinner flotante ocultado');
     }
 }
-
-// ===============================
-// FUNCIONES DE INSTITUCIONES
-// ===============================
 
 /**
  * Configura el catálogo de instituciones
@@ -157,10 +135,6 @@ export function obtenerInstitucionesCatalogo() {
     return [...institucionesCatalogo];
 }
 
-// ===============================
-// FUNCIONES DE SELECT2
-// ===============================
-
 /**
  * Oculta las acciones personalizadas de Select2
  */
@@ -186,10 +160,6 @@ export function limpiarSelectClues(selectElement = null) {
         console.log('🧹 Select de CLUES limpiado');
     }
 }
-
-// ===============================
-// FUNCIONES DE CONVERSIÓN
-// ===============================
 
 /**
  * Convierte un número de columna a letra de Excel (1 -> A, 2 -> B, etc.)
@@ -239,10 +209,6 @@ export function letraANumero(letra) {
     
     return numero;
 }
-
-// ===============================
-// FUNCIONES DE MANEJO DE FECHAS
-// ===============================
 
 /**
  * Formatea una fecha a string legible
@@ -330,10 +296,6 @@ export function calcularDuracion(fechaInicio, fechaFin = new Date()) {
     }
 }
 
-// ===============================
-// FUNCIONES DE MANEJO DE ARCHIVOS
-// ===============================
-
 /**
  * Descarga un archivo desde un Blob
  * @param {Blob} blob - Blob del archivo
@@ -351,12 +313,9 @@ export function descargarArchivo(blob, nombre) {
         link.href = url;
         link.download = nombre;
         link.style.display = 'none';
-        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        // Liberar objeto URL después de un tiempo
         setTimeout(() => {
             URL.revokeObjectURL(url);
         }, 1000);
@@ -385,10 +344,6 @@ export function formatBytes(bytes, decimals = 2) {
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
-
-// ===============================
-// FUNCIONES DE VALIDACIÓN
-// ===============================
 
 /**
  * Valida si un valor es un array no vacío
@@ -437,10 +392,6 @@ export function validarEmail(email) {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
 }
-
-// ===============================
-// FUNCIONES DE MANEJO DE STRINGS
-// ===============================
 
 /**
  * Capitaliza la primera letra de un string
@@ -496,10 +447,6 @@ export function eliminarAcentos(str) {
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase();
 }
-
-// ===============================
-// FUNCIONES DE MANEJO DE ARRAYS Y OBJETOS
-// ===============================
 
 /**
  * Elimina duplicados de un array
@@ -575,7 +522,6 @@ export function filtrarPor(array, filtros) {
             }
             
             if (typeof value === 'object' && value !== null) {
-                // Filtrado por rango
                 if (value.min !== undefined && value.max !== undefined) {
                     return itemValue >= value.min && itemValue <= value.max;
                 }
@@ -591,10 +537,6 @@ export function filtrarPor(array, filtros) {
         });
     });
 }
-
-// ===============================
-// FUNCIONES DE MANEJO DE ERRORES
-// ===============================
 
 /**
  * Maneja errores de forma consistente
@@ -613,18 +555,13 @@ export function manejarError(error, contexto = 'Operación', mostrarAlerta = tru
     });
     
     if (mostrarAlerta) {
-        // Puedes personalizar cómo se muestran los errores al usuario
         const mensajeUsuario = `Error en ${contexto}: ${mensaje}`;
-        
-        // Usar notificación si está disponible, de lo contrario alert
         if (typeof mostrarNotificacion === 'function') {
             mostrarNotificacion('error', mensajeUsuario, 0);
         } else {
             alert(mensajeUsuario);
         }
     }
-    
-    // Retornar objeto de error para manejo posterior
     return {
         error: true,
         mensaje,
@@ -655,10 +592,6 @@ export function ejecutarSeguro(funcion, ...args) {
         };
     }
 }
-
-// ===============================
-// FUNCIONES DE PERFORMANCE
-// ===============================
 
 /**
  * Debounce function para limitar la frecuencia de ejecución
@@ -719,10 +652,6 @@ export function medirTiempoEjecucion(funcion, ...args) {
         fin
     };
 }
-
-// ===============================
-// FUNCIONES DE LOCALSTORAGE
-// ===============================
 
 /**
  * Guarda datos en localStorage
@@ -786,10 +715,6 @@ export function limpiarLocalStorage() {
     }
 }
 
-// ===============================
-// FUNCIONES DE LOGGING
-// ===============================
-
 /**
  * Log personalizado con niveles
  * @param {string} nivel - Nivel del log: 'debug', 'info', 'warn', 'error'
@@ -820,18 +745,12 @@ export function log(nivel, mensaje, data = null) {
     }
 }
 
-// ===============================
-// FUNCIONES DE CONFIGURACIÓN
-// ===============================
-
 /**
  * Obtiene la configuración de la aplicación
  * @returns {Object} Configuración
  */
 export function obtenerConfiguracion() {
     const config = obtenerDeLocalStorage('app-config') || {};
-    
-    // Configuración por defecto
     const configPorDefecto = {
         tema: 'claro',
         idioma: 'es',
@@ -855,78 +774,47 @@ export function guardarConfiguracion(config) {
     console.log('⚙️ Configuración guardada');
 }
 
-// ===============================
-// EXPORTACIÓN POR DEFECTO
-// ===============================
-
 export default {
-    // Spinner
     mostrarSpinner,
     ocultarSpinner,
     mostrarSpinnerFlotante,
     ocultarSpinnerFlotante,
-    
-    // Instituciones
     configurarInstituciones,
     obtenerInicialesInstitucion,
     obtenerNombreCompletoInstitucion,
     obtenerInstitucionesCatalogo,
-    
-    // Select2
     ocultarAccionesSelect2,
     limpiarSelectClues,
-    
-    // Conversión
     numeroALetra,
     letraANumero,
-    
-    // Fechas
     formatearFecha,
     obtenerFechaActual,
     calcularDuracion,
-    
-    // Archivos
     descargarArchivo,
     formatBytes,
-    
-    // Validación
     esArrayNoVacio,
     esObjetoNoVacio,
     esStringNoVacio,
     esNumeroPositivo,
     validarEmail,
-    
-    // Strings
     capitalizar,
     formatearNumero,
     truncarString,
     eliminarAcentos,
-    
-    // Arrays y objetos
     eliminarDuplicados,
     agruparPor,
     ordenarPor,
     filtrarPor,
-    
-    // Errores
     manejarError,
     ejecutarSeguro,
-    
-    // Performance
     debounce,
     throttle,
     medirTiempoEjecucion,
-    
-    // LocalStorage
     guardarEnLocalStorage,
     obtenerDeLocalStorage,
     eliminarDeLocalStorage,
     limpiarLocalStorage,
-    
-    // Logging
     log,
-    
-    // Configuración
     obtenerConfiguracion,
     guardarConfiguracion
 };
